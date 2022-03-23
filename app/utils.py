@@ -1,3 +1,20 @@
+
+
+TYPE_MAP = {"int": int, "str": str, "float": float, "list": list}
+
+
+def check_type(variable, str_type):
+    return type(variable) == TYPE_MAP[str_type]
+
+
+def try_cast(variable, str_type):
+    try:
+        variable = TYPE_MAP[str_type](variable)
+        return variable
+    except:
+        return False
+
+
 def message(status, message):
     response_object = {"status": status, "message": message}
     return response_object

@@ -1,0 +1,221 @@
+import json
+from PIL import Image
+import numpy as np
+from queue import Queue
+from app.io import csv as csv
+from app.io import video as video
+from app.io.storage import LocalStorageDataFetcher
+
+from app.utils import check_type
+from .calculation import *
+from .outputter import CalculationOutputter
+
+
+class Workflow:
+    def __init__(self):
+        self._name = None
+        self._model = None
+        self._model_arch = None
+        self._args = []
+        self._calculations = {}
+        self._outputters = []
+        self._resources = {}
+
+    def calculate(self, results):
+        pass
+
+    def output(self):
+        pass
+
+    def load_args(self, args):
+        pass
+
+    def load_calculations(self):
+        pass
+
+    def run(self):
+        pass
+
+    def interpret(self, d):
+        for k, v in d.items():
+            if v is not None and type(v) == str and v[0] == "$":
+                try:
+                    d[k] = self._resources[v[1:]]
+                except KeyError as e:
+                    print(f"Interpretation error: couldn't interpret {v} in {cname}")
+                    exit(0)
+        return d
+        
+class ObjectDetectionWorkflow(Workflow):
+    def __init__(self):
+        Workflow.__init__(self)
+        self._calculations = {}
+        self._prediction_calculation = []
+        self._calculation_calculations = []
+
+    def fill_args(self, args):
+        for a in self._args:
+            atype = a["type"]
+            aname = a["name"]
+            adefault = a.get("default", None)
+            required = a.get("required", False)
+            if adefault is None and required and aname not in args:
+                print(
+                    f"Error: You must provide a valid {aname} for the workflow to start"
+                )
+                exit()
+
+            if aname in args:
+                v = args[aname]
+                if not check_type(v, atype) and v is not None:
+                    vc = try_cast(v, atype)
+                    if not vc:
+                        print(
+                            f"Error: Type of {aname} != {atype} and neither can be casted to it"
+                        )
+                        exit()
+                self._resources[aname] = args[aname]
+            elif adefault:
+                self._resources[aname] = adefaul
+
+    def load_calculations(self, cal_list):
+        self._calculations = {}
+        self._prediction_calculation = []
+        self._calculation_calculations = []
+
+        cal_types = {
+            "record_timestamp": TimestampRecorder,
+            "type_counter": TypeCounter,
+            "put_on_pd": CalculationsToDf,
+            "record_frames": FramesRecorder,
+            "record_detections": DetectionRecorder,
+            "zone_filter": ZoneFilter,
+            "type_filter": TypeFilter,
+            "and_filters": AndFilters,
+            "visualize_detection_on_frames": VisualizeDetectionOnFrames,
+            "visualize_zone_on_frames": VisualizeZoneOnFrames,
+            "dection_of_filter": DetectionOfFilter,
+            "object_monitor": ObjectMonitor,
+        }
+        for c in cal_list:
+            cname = c["name"]
+            ctype = c["type"]
+
+            if c["on"] == "prediction":
+                self._prediction_calculation.append(cname)
+            elif c["on"] == "calculation":
+                self._calculation_calculations.append(cname)
+
+            c = self.interpret(c)
+            self._calculations[cname] = cal_types[ctype].create(**c)
+
+    def load_outputters(self, outputter_list):
+        io_handler_types = {
+            "csv": csv.CSVWriter,
+            "video": video.VideoWriter,
+            "multivideos": video.MultiVideosWriter,
+        }
+        for outputter in outputter_list:
+            outputter = self.interpret(outputter)
+
+            oname = outputter["name"]
+            io_handler_type = outputter["io_handler"]
+            io_handler = io_handler_types[io_handler_type].create(**outputter)
+            on = outputter["on"]
+
+            if on == "calculation":
+                calculation = self._calculations[outputter["calculation"]]
+                self._outputters.append(
+                    CalculationOutputter(oname, io_handler, calculation)
+                )
+
+    def calculate_on_prediction(self, frame, results):
+        for c in self._prediction_calculation:
+            self._calculations[c](frame, results)
+
+    def calculate_on_calculation(self):
+        for c in self._calculation_calculations:
+            cobject = self._calculations[c]
+            cals = [self._calculations[ck] for ck in cobject.keys()]
+            self._calculations[c](cals)
+
+    def output(self):
+        for o in self._outputters:
+            o.run()
+ 
+class WorkflowHandler:
+    def __init__(self,analysis_id,workflow_dict,workflow_args):
+        self._analysis_id = analysis_id
+        w = ObjectDetectionWorkflow()
+        w._args = workflow_dict["input_args"]
+
+        w.load_calculations(workflow_dict["calculations"])
+        w.load_outputters(workflow_dict["outputters"])
+        w.fill_args(workflow_args)
+        self._model = workflow_dict["model"]
+        self._datafetcher = LocalStorageDataFetcher()
+        
+        self._w = w
+        self._still = False
+        self._queue = Queue()
+        self._done_callback = None
+
+    def fill_args(self,data):
+        self._w.fill_args(data)
+    
+    def initialize(self):
+         
+
+    def put(self,results):
+        self._queue.put(results)
+
+    def done_streaming(self):
+        self._still = False
+
+    def fetch_results(self):
+        resultsData = self._queue.get()
+        frame,results = self._datafetcher.fetch(resultsData)
+        return frame,results
+
+    def start(self,callback):
+        self._done_callback = callback
+        self._still = True
+        b_thread = threading.Thread(
+                target=WorkflowHandler.start_calculator,
+                args=self,
+            )
+        b_thread.start()
+    
+    def done_callback(self):
+        self._done_callback(self._analysis_id)
+
+    def more(self):
+        return self._queue.qsize() > 0
+    
+    @classmethod
+    def start_calculator(handler):
+        while handler._still or handler.more():
+            if handler.more():
+                frame,results = handler.fetch_results()
+                handler._w.calculate_on_prediction(frame, results)
+        handler._w.calculate_on_calculation()
+        handler._w.output()
+        handler.done_callback()
+
+
+class WorkflowFactory:
+    Factory = None
+    def __init__(self,portofolio):
+        self._workflows = json.load(portofolio)
+    
+    @staticmethod
+    def create(analysis_id,workflow):
+        workflow_name = workflow["name"]
+        workflow_args = workflow["args"]
+        workflow_dict = self._workflows[workflow_name]
+        w = WorkflowHandler(analysis_id,workflow_dict,workflow_args)
+        return w
+        
+
+
+    

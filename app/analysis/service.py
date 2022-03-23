@@ -3,8 +3,9 @@ from flask import current_app
 
 from app import db
 from app.utils import err_resp, internal_err_resp, message
-from streamer import WebStreamWorker,Sink
-from factory import WorkflowFactory
+from app.streamer import WebStreamWorker,AISink
+from app.workflow.workflow import WorkflowFactory
+from app.ai import ModelManager
 
 
 class AnalysisBank:
@@ -49,7 +50,14 @@ class AnalysisService:
         workflow = data["workflow"]
         stream_type = stream["type"]
         analysis_id = data["analysis"]["id"]
-        sink = Sink(analysis_id)
+        model = workflow["model"]
+        
+        modelHandler = ModelHandler.init(model)
+        sink = AISink(analysis_id,modelHandler)
+
+        if not modelHandler:
+            return internal_err_resp()
+
         if stream_type == "file":
             pass
         elif stream_type == "stream":
@@ -68,6 +76,10 @@ class AnalysisService:
             return internal_err_resp()
 
         AnalysisBank.register(analysis_id,workflowWorker)
+        
+        running = modelHandler.run()
+        if not running:
+            return internal_err_resp()
 
         streamWorker.start(AnalysisService.done_streaming)
         workflowWorker.start(AnalysisService.done_workflow)
