@@ -1,4 +1,5 @@
-
+import os
+import base64
 
 TYPE_MAP = {"int": int, "str": str, "float": float, "list": list}
 
@@ -13,6 +14,14 @@ def try_cast(variable, str_type):
         return variable
     except:
         return False
+
+def array_to_base64(arr):
+    return base64.b64encode(arr)
+
+def mkdir(path):
+    if os.path.exists(path):
+        return
+    os.makedirs(path)
 
 
 def message(status, message):

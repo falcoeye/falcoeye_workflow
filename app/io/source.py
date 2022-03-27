@@ -8,7 +8,7 @@ import numpy
 import requests
 import streamlink
 
-from .sink import FileSink
+from .sink import VideoFileSink
 
 
 class Source:
@@ -53,21 +53,20 @@ class FileSource:
 class StreamSource:
     resolutions = {"best": {"width": 1920, "height": 1080}}
 
-    def __init__(self, url, queue_size=2000, resolution="best", sample_every=5, end=30):
+    def __init__(self, url, queue_size=2000, resolution="best", sample_every=5, length=30):
         self.stopped = False
         self.url = url
         self.resolution = resolution
         self.sample_every = sample_every
         self.width = -1
         self.height = -1
-        self.end = end
+        self.length = length
         self.frames_per_second = 30
         # initialize the queue used to store frames read from
         # the video stream
         self.Q = Queue(maxsize=queue_size)
 
-        self.width = StreamSource.resolutions[resolution]["width"]
-        self.height = StreamSource.resolutions[resolution]["height"]
+        
 
     @staticmethod
     def create_stream_pipe(url, resolution):
@@ -201,10 +200,25 @@ class YoutubeSource(StreamSource):
     }
 
     def __init__(
-        self, url, queue_size=2000, resolution="1080p", sample_every=5, end=30
-    ):
-        StreamSource.__init__(self, url, queue_size, resolution, sample_every, end)
+        self, url, queue_size=2000, resolution="1080p", sample_every=5, length=30):
+        StreamSource.__init__(self, url, queue_size, resolution, sample_every, length)
+        self.width = YoutubeSource.resolutions[resolution]["width"]
+        self.height = YoutubeSource.resolutions[resolution]["height"]
+        self.pipe = None
 
+    def open(self):
+        # fetching is client responsiblity
+        self.pipe = YoutubeSource.create_stream_pipe(self.url, self.resolution)
+
+    def read(self):
+        raw_image = self.pipe.stdout.read(
+                    self.height * self.width * 3
+                )  # read length*width*3 bytes (= 1 frame)
+
+        frame = numpy.fromstring(raw_image, dtype="uint8").reshape(
+            (self.height, self.width, 3)
+        )
+        return True,frame
     @staticmethod
     def capture_image(url, resolution="1080p"):
 
@@ -237,7 +251,7 @@ class YoutubeSource(StreamSource):
         # raw_image = pipe.stdout.read(height * width * 3)
         count_frame = 0
         lengthFrames = length * 30  # Assuming 30 frames per second
-        sink = FileSink(output_path)
+        sink = VideoFileSink(output_path)
         sink.open(30, width, height)
         while count_frame < lengthFrames:
             raw_image = pipe.stdout.read(
@@ -253,23 +267,21 @@ class YoutubeSource(StreamSource):
         pipe.kill()
         return True
 
-def create_streamer(url, provider, resolution, sample_every, end):
+def create_streamer(url, provider, resolution, sample_every, length):
     if provider == "angelcam":
         return AngelCamSource(
-            url, resolution=resolution, sample_every=sample_every, end=end
+            url, resolution=resolution, sample_every=sample_every, length=length
         )
     elif provider == "youtube":
         return YoutubeSource(
-            url, resolution=resolution, sample_every=sample_every, end=end
+            url, resolution=resolution, sample_every=sample_every, length=length
         )
-
 
 def capture_image(url, provider):
     if provider == "angelcam":
         return AngelCamSource.capture_image(url)
     elif provider == "youtube":
         return YoutubeSource.capture_image(url)
-
 
 def record_video(url, provider, resolution, length, output_path):
     if provider == "youtube":

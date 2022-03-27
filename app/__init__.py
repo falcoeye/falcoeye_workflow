@@ -10,7 +10,7 @@ from flask import Flask
 from config import config_by_name
 
 from .extensions import bcrypt, cors, db, jwt, ma, migrate
-
+from .api import api_bp
 # Import extensions
 # Import config
 # from flask_restplus import Api
@@ -21,13 +21,6 @@ def create_app(config_name):
     app.config.from_object(config_by_name[config_name])
 
     register_extensions(app)
-
-    # Register blueprints
-    from .auth import auth_bp
-
-    app.register_blueprint(auth_bp)
-
-    from .api import api_bp
 
     app.register_blueprint(api_bp, url_prefix="/api")
 

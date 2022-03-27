@@ -2,7 +2,7 @@ import os
 
 import cv2
 
-from .sink import FileSink as FileSink
+from .sink import VideoFileSink as VideoFileSink
 
 
 class VideoWriter:

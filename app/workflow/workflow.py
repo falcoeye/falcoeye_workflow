@@ -1,14 +1,59 @@
 import json
 from PIL import Image
 import numpy as np
+import threading
 from queue import Queue
 from app.io import csv as csv
 from app.io import video as video
 from app.io.storage import LocalStorageDataFetcher
-
+from app.ai.model import FalcoeyeVideoDetection
 from app.utils import check_type
 from .calculation import *
 from .outputter import CalculationOutputter
+
+class AnalysisBank:
+    singlton = None
+    def __init__(self):
+        self._running = {}
+    
+    def register_(self,aid,worker):
+        self._running[aid] = worker
+    
+    def put_(self,aid,item):
+        self._running[aid].put(item)
+    
+    def done_streaming_(self,aid):
+        self._running[aid].done_streaming()
+    
+    def done_workflow_(self,aid):
+        del self._running[aid]
+
+    @staticmethod
+    def init():
+        AnalysisBank.singlton = AnalysisBank()
+
+    @staticmethod
+    def register(aid,worker):
+        AnalysisBank.singlton.register_(aid,worker)
+
+    @staticmethod
+    def put(aid,item):
+        AnalysisBank.singlton.put_(aid,item)
+
+    @staticmethod
+    def done_streaming(aid):
+        AnalysisBank.singlton.done_streaming_(aid)
+    
+    @staticmethod
+    def done_workflow(aid):
+        AnalysisBank.singlton.done_workflow_(aid)
+
+    @staticmethod
+    def get_status(aid):
+        if aid in AnalysisBank.singlton._running:
+            return "running"
+        else:
+            return "done"
 
 
 class Workflow:
@@ -42,7 +87,7 @@ class Workflow:
                 try:
                     d[k] = self._resources[v[1:]]
                 except KeyError as e:
-                    print(f"Interpretation error: couldn't interpret {v} in {cname}")
+                    print(f"Interpretation error: couldn't interpret {v} in {k}")
                     exit(0)
         return d
         
@@ -55,6 +100,7 @@ class ObjectDetectionWorkflow(Workflow):
 
     def fill_args(self, args):
         for a in self._args:
+            print(a)
             atype = a["type"]
             aname = a["name"]
             adefault = a.get("default", None)
@@ -105,7 +151,6 @@ class ObjectDetectionWorkflow(Workflow):
                 self._prediction_calculation.append(cname)
             elif c["on"] == "calculation":
                 self._calculation_calculations.append(cname)
-
             c = self.interpret(c)
             self._calculations[cname] = cal_types[ctype].create(**c)
 
@@ -131,6 +176,7 @@ class ObjectDetectionWorkflow(Workflow):
 
     def calculate_on_prediction(self, frame, results):
         for c in self._prediction_calculation:
+            print(c)
             self._calculations[c](frame, results)
 
     def calculate_on_calculation(self):
@@ -146,16 +192,16 @@ class ObjectDetectionWorkflow(Workflow):
 class WorkflowHandler:
     def __init__(self,analysis_id,workflow_dict,workflow_args):
         self._analysis_id = analysis_id
-        w = ObjectDetectionWorkflow()
-        w._args = workflow_dict["input_args"]
-
-        w.load_calculations(workflow_dict["calculations"])
-        w.load_outputters(workflow_dict["outputters"])
-        w.fill_args(workflow_args)
+        self._w = ObjectDetectionWorkflow()
+        self._w._args = workflow_dict["input_args"]
+        print(workflow_args)
+        self._w.fill_args(workflow_args)
+        self._w.load_calculations(workflow_dict["calculations"])
+        self._w.load_outputters(workflow_dict["outputters"])
+        
         self._model = workflow_dict["model"]
         self._datafetcher = LocalStorageDataFetcher()
         
-        self._w = w
         self._still = False
         self._queue = Queue()
         self._done_callback = None
@@ -163,9 +209,6 @@ class WorkflowHandler:
     def fill_args(self,data):
         self._w.fill_args(data)
     
-    def initialize(self):
-         
-
     def put(self,results):
         self._queue.put(results)
 
@@ -173,17 +216,19 @@ class WorkflowHandler:
         self._still = False
 
     def fetch_results(self):
-        resultsData = self._queue.get()
-        frame,results = self._datafetcher.fetch(resultsData)
+        resultsPath = self._queue.get()
+        frame,results = self._datafetcher.fetch(resultsPath)
         return frame,results
 
     def start(self,callback):
         self._done_callback = callback
         self._still = True
         b_thread = threading.Thread(
-                target=WorkflowHandler.start_calculator,
-                args=self,
+                target=self.start_calculator_,
+                args=(),
             )
+        b_thread.daemon = True
+    
         b_thread.start()
     
     def done_callback(self):
@@ -192,27 +237,39 @@ class WorkflowHandler:
     def more(self):
         return self._queue.qsize() > 0
     
-    @classmethod
-    def start_calculator(handler):
-        while handler._still or handler.more():
-            if handler.more():
-                frame,results = handler.fetch_results()
-                handler._w.calculate_on_prediction(frame, results)
-        handler._w.calculate_on_calculation()
-        handler._w.output()
-        handler.done_callback()
-
+    def start_calculator_(self):
+        while self._still or self.more():
+            if self.more():
+                frame,results = self.fetch_results()
+                print(results)
+                falcoeye_detection = FalcoeyeVideoDetection(
+                    results["detection"], results["category_map"], 
+                    results["count"], results["init_time"]
+                )
+                print(falcoeye_detection)
+                self._w.calculate_on_prediction(frame, falcoeye_detection)
+                print("Calculation done")
+        print("Finished calculator",flush=True)
+        self._w.calculate_on_calculation()
+        self._w.output()
+        self.done_callback()
 
 class WorkflowFactory:
     Factory = None
     def __init__(self,portofolio):
-        self._workflows = json.load(portofolio)
+        with open(portofolio) as f:
+            self._workflows = json.load(f)
     
+    @staticmethod
+    def init(portofolio):
+        # TODO: from db
+        WorkflowFactory.Factory = WorkflowFactory(portofolio)
+
     @staticmethod
     def create(analysis_id,workflow):
         workflow_name = workflow["name"]
         workflow_args = workflow["args"]
-        workflow_dict = self._workflows[workflow_name]
+        workflow_dict = WorkflowFactory.Factory._workflows[workflow_name]
         w = WorkflowHandler(analysis_id,workflow_dict,workflow_args)
         return w
         

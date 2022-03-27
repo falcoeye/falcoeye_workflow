@@ -3,47 +3,14 @@ from flask import current_app
 
 from app import db
 from app.utils import err_resp, internal_err_resp, message
-from app.streamer import WebStreamWorker,AISink
+from app.streamer import WebStreamWorker
+from app.io.sink import AISink
 from app.workflow.workflow import WorkflowFactory
-from app.ai import ModelManager
-
-
-class AnalysisBank:
-    singlton = AnalysisBank()
-    def __init__(self):
-        self._running = {}
-    
-    def register_(self,aid,worker):
-        self._running[aid] = worker
-    
-    def put_(self,aid,item):
-        self._running[aid].put(item)
-    
-    def done_streaming_(self,aid):
-        self._running[aid].done_streaming()
-    
-    def done_workflow_(self,aid):
-        del self._running[aid]
-    
-    @staticmethod
-    def register(aid,worker):
-        AnalysisBank.singlton.register(aid,worker)
-
-    @staticmethod
-    def put(aid,item):
-        AnalysisBank.singlton.put(aid,item)
-
-    @staticmethod
-    def done_streaming(aid):
-        AnalysisBank.singlton.done_streaming_(aid)
-    
-    @staticmethod
-    def done_workflow(aid):
-        AnalysisBank.singlton.done_workflow_(aid)
+from app.ai import ModelHandler
+from app.workflow import AnalysisBank
 
 
 class AnalysisService:
-    AnalysisBank = {}
     @staticmethod
     def new_analysis(data):
         stream = data["stream"]
@@ -53,7 +20,7 @@ class AnalysisService:
         model = workflow["model"]
         
         modelHandler = ModelHandler.init(model)
-        sink = AISink(analysis_id,modelHandler)
+        
 
         if not modelHandler:
             return internal_err_resp()
@@ -66,27 +33,25 @@ class AnalysisService:
             resolution = stream["resolution"]
             sample_every = stream.get("sample_every",1)
             length = stream.get("length",60)
-            streamWorker = WebStreamWorker(analysis_id,url,provider,resolution,sample_every,length,sink)
             workflowWorker = WorkflowFactory.create(analysis_id,workflow)
+            sink = AISink(analysis_id,modelHandler,workflowWorker)
+            streamWorker = WebStreamWorker(analysis_id,url,provider,resolution,sample_every,length,sink)
         
-        if not streamWorker.initialize():
-            return internal_err_resp()
-        
-        if not workflowWorker.initialize():
-            return internal_err_resp()
 
         AnalysisBank.register(analysis_id,workflowWorker)
         
         running = modelHandler.run()
         if not running:
             return internal_err_resp()
-
-        streamWorker.start(AnalysisService.done_streaming)
-        workflowWorker.start(AnalysisService.done_workflow)
-        resp = message(True, "Analysis started")
-        return resp, 200
+        try:
+            streamWorker.start(AnalysisService.done_streaming)
+            print("streaming started")
+            workflowWorker.start(AnalysisService.done_workflow)
+            resp = message(True, "Analysis started")
+            return resp, 200
 
         except Exception as error:
+            raise
             current_app.logger.error(error)
             return internal_err_resp()
 
@@ -101,3 +66,7 @@ class AnalysisService:
     @staticmethod
     def done_workflow(aid):
         AnalysisBank.done_workflow(aid)
+    
+    @staticmethod
+    def get_status(analysis_id):
+        return AnalysisBank.get_status(analysis_id)

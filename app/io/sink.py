@@ -38,17 +38,26 @@ class VideoFileSink(Sink):
         self._writer.release()
 
 class AISink(Sink):
-    def __init__(self,analysis_id,modelHandler):
+    def __init__(self,analysis_id,modelHandler,wf_handler):
         self._analysis_id = analysis_id
         self._modelHandler = modelHandler
+        self._wf_handler = wf_handler
     
-    def sink(self,frame,count)
+    def sink(self,c_time,frame,count):
         data = {
             "analysis_id": self._analysis_id,
-            "frame": frame,
-            "count": count
+            "count": count,
+            "init_time": c_time
         }
-        self._modelHandler.predict(data)
+        print(data)
+        # TODO: in async ways
+        AISink.sink_(frame,data,self._modelHandler,self._wf_handler)
+    @staticmethod
+    def sink_(frame,data,model_handler,wf_handler):
+        
+        results_path =  model_handler.predict(frame,data)
+        print("results received",results_path)
+        wf_handler.put(results_path)
 
 class ImageSink(Sink):
     def __init__(self, filename):

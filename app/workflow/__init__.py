@@ -1,1 +1,1 @@
-from .workflow import WorkflowManager
+from .workflow import AnalysisBank,WorkflowFactory
