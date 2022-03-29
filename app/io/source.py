@@ -66,8 +66,6 @@ class StreamSource:
         # the video stream
         self.Q = Queue(maxsize=queue_size)
 
-        
-
     @staticmethod
     def create_stream_pipe(url, resolution):
         if url == None:
@@ -219,6 +217,7 @@ class YoutubeSource(StreamSource):
             (self.height, self.width, 3)
         )
         return True,frame
+    
     @staticmethod
     def capture_image(url, resolution="1080p"):
 

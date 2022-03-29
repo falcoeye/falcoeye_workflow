@@ -1,33 +1,18 @@
 import json
 import time
-def test_new_analysis(client,bank,factory):
+def test_new_analysis(client,bank,harbour,fishfinderw,fishfinderm):
 
     data = {
         "analysis": {
             "id": "test"
         },
-        "stream": {
-            "type": "stream",
-            "url": "https://www.youtube.com/watch?v=ORz-rqB7Eno",
-            "resolution": "1080p",
-            "sample_every" :2,
-            "provider": "youtube",
-            "length": 60
-        },
+        "stream": harbour,
         "workflow": {
-            "name": "KAUST Fish Counter",
-            "model":{
-                "name": "KAUST Fish Finder",
-                "task": "detection",
-                "framework": "tensorflow",
-                "base_arch": "frcnn",
-                "size": "1024",
-                "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/kaust_tf_frcnn_1024x1024/prod/",
-                "deployment_type": "checkpoint"
-            },
+            "structure":fishfinderw,   
+            "model":fishfinderm,
             "args": {
                 "source_type":"stream",
-                "output_path": "./a.csv"
+                "output_path": "./tests/fishfinder_harbour.csv"
             }
         }
     }

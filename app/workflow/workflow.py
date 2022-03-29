@@ -1,12 +1,11 @@
 import json
-from PIL import Image
 import numpy as np
 import threading
 from queue import Queue
 from app.io import csv as csv
 from app.io import video as video
 from app.io.storage import LocalStorageDataFetcher
-from app.ai.model import FalcoeyeVideoDetection
+from app.ai.detection import FalcoeyeVideoDetection
 from app.utils import check_type
 from .calculation import *
 from .outputter import CalculationOutputter
@@ -78,7 +77,7 @@ class Workflow:
     def load_calculations(self):
         pass
 
-    def run(self):
+    def start(self):
         pass
 
     def interpret(self, d):
@@ -190,30 +189,30 @@ class ObjectDetectionWorkflow(Workflow):
             o.run()
  
 class WorkflowHandler:
-    def __init__(self,analysis_id,workflow_dict,workflow_args):
+    def __init__(self,analysis_id,workflow_structure,workflow_args):
         self._analysis_id = analysis_id
         self._w = ObjectDetectionWorkflow()
-        self._w._args = workflow_dict["input_args"]
-        print(workflow_args)
+        self._w._args = workflow_structure["input_args"]
         self._w.fill_args(workflow_args)
-        self._w.load_calculations(workflow_dict["calculations"])
-        self._w.load_outputters(workflow_dict["outputters"])
+        self._w.load_calculations(workflow_structure["calculations"])
+        self._w.load_outputters(workflow_structure["outputters"])
         
-        self._model = workflow_dict["model"]
+        self._model = workflow_structure["model"]
         self._datafetcher = LocalStorageDataFetcher()
         
-        self._still = False
+        self._still_streaming = False
+        self._still_sinking = False
         self._queue = Queue()
         self._done_callback = None
 
     def fill_args(self,data):
         self._w.fill_args(data)
     
+    def more(self):
+        return self._queue.qsize() > 0
+
     def put(self,results):
         self._queue.put(results)
-
-    def done_streaming(self):
-        self._still = False
 
     def fetch_results(self):
         resultsPath = self._queue.get()
@@ -222,7 +221,8 @@ class WorkflowHandler:
 
     def start(self,callback):
         self._done_callback = callback
-        self._still = True
+        self._still_streaming = True
+        self._still_sinking = True
         b_thread = threading.Thread(
                 target=self.start_calculator_,
                 args=(),
@@ -230,47 +230,37 @@ class WorkflowHandler:
         b_thread.daemon = True
     
         b_thread.start()
+        return b_thread.is_alive()
     
     def done_callback(self):
         self._done_callback(self._analysis_id)
 
-    def more(self):
-        return self._queue.qsize() > 0
+    def done_streaming(self):
+        self._still_streaming = False
+    
+    def done_sinking(self):
+        self._still_sinking = False
     
     def start_calculator_(self):
-        while self._still or self.more():
+        while self._still_streaming or self._still_sinking or self.more():
             if self.more():
                 frame,results = self.fetch_results()
-                print(results)
                 falcoeye_detection = FalcoeyeVideoDetection(
                     results["detection"], results["category_map"], 
                     results["count"], results["init_time"]
                 )
-                print(falcoeye_detection)
                 self._w.calculate_on_prediction(frame, falcoeye_detection)
-                print("Calculation done")
-        print("Finished calculator",flush=True)
         self._w.calculate_on_calculation()
         self._w.output()
         self.done_callback()
 
 class WorkflowFactory:
-    Factory = None
-    def __init__(self,portofolio):
-        with open(portofolio) as f:
-            self._workflows = json.load(f)
-    
-    @staticmethod
-    def init(portofolio):
-        # TODO: from db
-        WorkflowFactory.Factory = WorkflowFactory(portofolio)
+    def __init__(self):
+        pass
 
     @staticmethod
-    def create(analysis_id,workflow):
-        workflow_name = workflow["name"]
-        workflow_args = workflow["args"]
-        workflow_dict = WorkflowFactory.Factory._workflows[workflow_name]
-        w = WorkflowHandler(analysis_id,workflow_dict,workflow_args)
+    def create(analysis_id,workflow_structure,workflow_args):
+        w = WorkflowHandler(analysis_id,workflow_structure,workflow_args)
         return w
         
 

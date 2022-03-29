@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw
 
-
 class TimestampRecorder:
     def __init__(self, name):
         self._name = name
@@ -59,7 +58,6 @@ class DetectionRecorder:
         fr = DetectionRecorder(args["name"])
         return fr
 
-
 class FramesRecorder:
     def __init__(self, name):
         self._name = name
@@ -79,7 +77,6 @@ class FramesRecorder:
     def create(cls, **args):
         fr = FramesRecorder(args["name"])
         return fr
-
 
 class ObjectMonitor:
     def __init__(self, name, objectName, minToTriggerIn, minToTriggerOut):
@@ -159,7 +156,6 @@ class ObjectMonitor:
         fr = ObjectMonitor(args["name"], objectName, minToTriggerIn, minToTriggerOut)
         return fr
 
-
 class TypeCounter:
     def __init__(self, name, keys):
         self._counts = {k: [] for k in keys}
@@ -187,7 +183,6 @@ class TypeCounter:
 
         tc = TypeCounter(args["name"], classes)
         return tc
-
 
 class TypeFilter:
     def __init__(self, name, keys):
@@ -219,7 +214,6 @@ class TypeFilter:
 
         tc = TypeFilter(args["name"], classes)
         return tc
-
 
 class ZoneFilter:
     def __init__(self, points, width, height):
@@ -263,7 +257,6 @@ class ZoneFilter:
         zf = ZoneFilter(points, width, height)
         return zf
 
-
 class CalculationsCalculation:
     def __init__(self, calculation_keys):
         self._calculation_keys = calculation_keys
@@ -276,7 +269,6 @@ class CalculationsCalculation:
 
     def __call__(self):
         pass
-
 
 class VisualizeDetectionOnFrames(CalculationsCalculation):
     def __init__(self, calculation_keys):
@@ -319,7 +311,6 @@ class VisualizeDetectionOnFrames(CalculationsCalculation):
         c = VisualizeDetectionOnFrames(calkeys)
         return c
 
-
 class VisualizeZoneOnFrames(CalculationsCalculation):
     def __init__(self, calculation_keys, points, width, height):
         CalculationsCalculation.__init__(self, calculation_keys)
@@ -357,7 +348,6 @@ class VisualizeZoneOnFrames(CalculationsCalculation):
         c = VisualizeZoneOnFrames(calkeys, points, width, height)
         return c
 
-
 # class DetectionToText(CalculationsCalculation):
 #     def __init__(self, calculation_keys,template):
 #         CalculationsCalculation.__init__(self, calculation_keys)
@@ -388,7 +378,6 @@ class VisualizeZoneOnFrames(CalculationsCalculation):
 #             exit()
 #         c = DetectionToText(calkeys)
 #         return c
-
 
 class DetectionOfFilter(CalculationsCalculation):
     def __init__(self, calculation_keys):
@@ -423,7 +412,6 @@ class DetectionOfFilter(CalculationsCalculation):
         c = DetectionOfFilter(calkeys)
         return c
 
-
 class AndFilters(CalculationsCalculation):
     def __init__(self, calculation_keys):
         CalculationsCalculation.__init__(self, calculation_keys)
@@ -451,7 +439,6 @@ class AndFilters(CalculationsCalculation):
             exit()
         c = AndFilters(calkeys)
         return c
-
 
 class CalculationsToDf(CalculationsCalculation):
     def __init__(self, calculation_keys):

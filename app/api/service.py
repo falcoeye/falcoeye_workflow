@@ -13,17 +13,26 @@ from app.workflow import AnalysisBank
 class AnalysisService:
     @staticmethod
     def new_analysis(data):
-        stream = data["stream"]
-        workflow = data["workflow"]
+        # stream info
+        stream      = data["stream"]
         stream_type = stream["type"]
+        # workflow info
+        workflow_structure = data["workflow"]["structure"]
+        workflow_args      = data["workflow"]["args"]
+        model              = data["workflow"]["model"]
+        # analysis info
         analysis_id = data["analysis"]["id"]
-        model = workflow["model"]
         
+        # Initializing model first
         modelHandler = ModelHandler.init(model)
-        
-
         if not modelHandler:
             return internal_err_resp()
+
+        # Creating workflow handler
+        workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args)
+
+        # Creating AI sink to stream frames into
+        sink = AISink(analysis_id,modelHandler,workflowWorker)
 
         if stream_type == "file":
             pass
@@ -33,27 +42,34 @@ class AnalysisService:
             resolution = stream["resolution"]
             sample_every = stream.get("sample_every",1)
             length = stream.get("length",60)
-            workflowWorker = WorkflowFactory.create(analysis_id,workflow)
-            sink = AISink(analysis_id,modelHandler,workflowWorker)
             streamWorker = WebStreamWorker(analysis_id,url,provider,resolution,sample_every,length,sink)
         
-
+        # Registering analysis for status update
         AnalysisBank.register(analysis_id,workflowWorker)
         
-        running = modelHandler.run()
-        if not running:
+        # Start model container if not running
+        started = modelHandler.start()
+        if not started:
             return internal_err_resp()
-        try:
-            streamWorker.start(AnalysisService.done_streaming)
-            print("streaming started")
-            workflowWorker.start(AnalysisService.done_workflow)
-            resp = message(True, "Analysis started")
-            return resp, 200
+        
+        # Start workflow 
+        started = workflowWorker.start(AnalysisService.done_workflow)
+        if not started:
+            return internal_err_resp()
 
-        except Exception as error:
-            raise
-            current_app.logger.error(error)
+        # Start sink 
+        started = sink.start()
+        if not started:
             return internal_err_resp()
+        
+        # Start streamer
+        started = streamWorker.start(AnalysisService.done_streaming)
+        if not started:
+            return internal_err_resp()    
+            
+        resp = message(True, "Anaysis has been started")
+        return resp, 200
+        
 
     @staticmethod
     def predicted(aid,prediction_data):

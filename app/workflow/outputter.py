@@ -6,7 +6,6 @@ class Outputter:
     def run(self):
         pass
 
-
 class CalculationOutputter(Outputter):
     def __init__(self, name, ioHandler, calculation):
         Outputter.__init__(self, name, ioHandler)
