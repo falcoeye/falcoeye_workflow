@@ -1,1 +1,1 @@
-from .workflow import AnalysisBank,WorkflowFactory
+from .workflow import WorkflowFactory

@@ -10,50 +10,6 @@ from app.utils import check_type
 from .calculation import *
 from .outputter import CalculationOutputter
 
-class AnalysisBank:
-    singlton = None
-    def __init__(self):
-        self._running = {}
-    
-    def register_(self,aid,worker):
-        self._running[aid] = worker
-    
-    def put_(self,aid,item):
-        self._running[aid].put(item)
-    
-    def done_streaming_(self,aid):
-        self._running[aid].done_streaming()
-    
-    def done_workflow_(self,aid):
-        del self._running[aid]
-
-    @staticmethod
-    def init():
-        AnalysisBank.singlton = AnalysisBank()
-
-    @staticmethod
-    def register(aid,worker):
-        AnalysisBank.singlton.register_(aid,worker)
-
-    @staticmethod
-    def put(aid,item):
-        AnalysisBank.singlton.put_(aid,item)
-
-    @staticmethod
-    def done_streaming(aid):
-        AnalysisBank.singlton.done_streaming_(aid)
-    
-    @staticmethod
-    def done_workflow(aid):
-        AnalysisBank.singlton.done_workflow_(aid)
-
-    @staticmethod
-    def get_status(aid):
-        if aid in AnalysisBank.singlton._running:
-            return "running"
-        else:
-            return "done"
-
 
 class Workflow:
     def __init__(self):
@@ -203,7 +159,7 @@ class WorkflowHandler:
         self._still_streaming = False
         self._still_sinking = False
         self._queue = Queue()
-        self._done_callback = None
+        self._running = False
 
     def fill_args(self,data):
         self._w.fill_args(data)
@@ -219,8 +175,7 @@ class WorkflowHandler:
         frame,results = self._datafetcher.fetch(resultsPath)
         return frame,results
 
-    def start(self,callback):
-        self._done_callback = callback
+    def start(self):
         self._still_streaming = True
         self._still_sinking = True
         b_thread = threading.Thread(
@@ -230,10 +185,22 @@ class WorkflowHandler:
         b_thread.daemon = True
     
         b_thread.start()
+        self._running = True
         return b_thread.is_alive()
     
-    def done_callback(self):
-        self._done_callback(self._analysis_id)
+    def is_running(self):
+        return self._running
+
+    def is_sinking(self):
+        return self._still_sinking
+
+    def is_streaming(self):
+        return self._still_streaming
+
+    def done_(self):
+        self._running = False
+        # TODO: postback to backend
+        pass
 
     def done_streaming(self):
         self._still_streaming = False
@@ -252,7 +219,7 @@ class WorkflowHandler:
                 self._w.calculate_on_prediction(frame, falcoeye_detection)
         self._w.calculate_on_calculation()
         self._w.output()
-        self.done_callback()
+        self.done_()
 
 class WorkflowFactory:
     def __init__(self):

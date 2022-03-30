@@ -78,7 +78,6 @@ class AISink(Sink):
                 self._wf_handler.put(results_path)
         self._wf_handler.done_sinking()
         
-
 class ImageSink(Sink):
     def __init__(self, filename):
         Sink.__init__(self)

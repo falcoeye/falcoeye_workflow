@@ -206,6 +206,7 @@ class YoutubeSource(StreamSource):
 
     def open(self):
         # fetching is client responsiblity
+        print(f"Creating pipe with {self.url}, {self.resolution}")
         self.pipe = YoutubeSource.create_stream_pipe(self.url, self.resolution)
 
     def read(self):

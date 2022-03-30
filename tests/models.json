@@ -1,0 +1,12 @@
+{
+    
+    "KAUST Fish Finder":{
+        "name": "KAUST Fish Finder",
+        "task": "detection",
+        "framework": "tensorflow",
+        "base_arch": "frcnn",
+        "size": "1024",
+        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/kaust_tf_frcnn_1024x1024/prod/",
+        "deployment_type": "checkpoint"
+    }
+}

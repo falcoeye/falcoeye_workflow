@@ -1,6 +1,13 @@
 import json
 import time
-def test_new_analysis(client,bank,harbour,fishfinderw,fishfinderm):
+
+def check_status(client,analysis_id):
+    resp = client.get(f"/api/analysis/status/{analysis_id}")
+    assert resp.status_code == 200
+    status = resp.json
+    return status
+
+def test_new_analysis(client,harbour,fishfinderw,fishfinderm):
 
     data = {
         "analysis": {
@@ -16,16 +23,19 @@ def test_new_analysis(client,bank,harbour,fishfinderw,fishfinderm):
             }
         }
     }
+
     resp = client.post(
         "/api/analysis/",
         data=json.dumps(data),
         content_type="application/json",
     )
-    assert resp.status_code == 200
-    status = client.get("/api/analysis/status/test").data.decode().replace("\"","").strip()
-    while status == "running":
-        status = client.get("/api/analysis/status/test").data.decode().replace("\"","").strip()
-        print(status)
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test")
+    print(status,flush=True)
+    while status["workflow_status"]:
         time.sleep(3)
+        status = check_status(client,"test")
+        print(status,flush=True)
 
     
