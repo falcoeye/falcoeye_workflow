@@ -40,6 +40,9 @@ class FileSource:
         self.frames_per_second = self._reader.get(cv2.CAP_PROP_FPS)
         self.num_frames = int(self._reader.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    def seek(self,n):
+        self._reader.set(cv2.CAP_PROP_POS_FRAMES,n)
+
     def read(self):
         return self._reader.read()
 
@@ -267,7 +270,7 @@ class YoutubeSource(StreamSource):
         pipe.kill()
         return True
 
-def create_streamer(url, provider, resolution, sample_every, length):
+def create_web_streamer(url, provider, resolution, sample_every, length):
     if provider == "angelcam":
         return AngelCamSource(
             url, resolution=resolution, sample_every=sample_every, length=length
@@ -276,6 +279,9 @@ def create_streamer(url, provider, resolution, sample_every, length):
         return YoutubeSource(
             url, resolution=resolution, sample_every=sample_every, length=length
         )
+
+def create_file_streamer(filepath, sample_every):
+    return FileSource(filepath)
 
 def capture_image(url, provider):
     if provider == "angelcam":

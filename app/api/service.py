@@ -2,7 +2,7 @@ import dateutil.parser
 from flask import current_app
 
 from app.utils import err_resp, internal_err_resp, message
-from app.streamer import WebStreamWorker
+from app.streamer import WebStreamWorker,FileStreamWorker
 from app.io.sink import AISink
 from app.workflow.workflow import WorkflowFactory
 from app.ai import ModelHandler
@@ -43,7 +43,10 @@ class AnalysisService:
         print("Sink created")
 
         if stream_type == "file":
-            pass
+            sample_every = stream.get("sample_every",1)
+            filepath = stream["path"]
+            streamWorker = FileStreamWorker(workflowWorker,filepath,sample_every,sink)
+
         elif stream_type == "stream":
             url = stream["url"]
             provider = stream["provider"]

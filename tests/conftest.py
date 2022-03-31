@@ -38,3 +38,20 @@ def harbour():
         "provider": "youtube",
         "length": 60
     }
+
+
+@pytest.fixture
+def arabian_angelfish():
+    return {
+        "type": "file",
+        "path": "./tests/arabian_angelfish_short.mov",
+        "sample_every" :1
+    }
+
+@pytest.fixture
+def lutjanis():
+    return {
+        "type": "file",
+        "path": "./tests/lutjanis.mov",
+        "sample_every" :30
+    }

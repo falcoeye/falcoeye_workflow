@@ -131,7 +131,6 @@ class ObjectDetectionWorkflow(Workflow):
 
     def calculate_on_prediction(self, frame, results):
         for c in self._prediction_calculation:
-            print(c)
             self._calculations[c](frame, results)
 
     def calculate_on_calculation(self):

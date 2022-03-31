@@ -1,1 +1,1 @@
-from .streamer import WebStreamWorker
+from .streamer import WebStreamWorker,FileStreamWorker

@@ -454,6 +454,7 @@ class CalculationsToDf(CalculationsCalculation):
                 data[c.name] = results
             elif type(results) == dict:
                 data.update(results)
+        
         self._df = pd.DataFrame(data)
 
     def get_results(self):
