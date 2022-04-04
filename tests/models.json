@@ -8,5 +8,14 @@
         "size": "1024",
         "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/kaust_tf_frcnn_1024x1024/prod/",
         "deployment_type": "checkpoint"
+    },
+    "Vehicles Counter":{
+        "name": "Vehicles Counter",
+        "task": "detection",
+        "framework": "torch",
+        "base_arch": "yolo5",
+        "size": "1024",
+        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/vehicles/vehcounter/yolov5/prod/",
+        "deployment_type": "checkpoint"
     }
 }

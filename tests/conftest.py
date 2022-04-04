@@ -29,6 +29,18 @@ def fishfinderm():
         return json.load(f)["KAUST Fish Finder"]
 
 @pytest.fixture
+def veheyew():
+    # TODO: Should come from backend
+    with open("./tests/workflows.json") as f:
+        return json.load(f)["Vehicles Counter"]
+
+@pytest.fixture
+def veheyem():
+    # TODO: Should come from backend
+    with open("./tests/models.json") as f:
+        return json.load(f)["Vehicles Counter"]
+
+@pytest.fixture
 def harbour():
     return {
         "type": "stream",
@@ -44,7 +56,7 @@ def harbour():
 def arabian_angelfish():
     return {
         "type": "file",
-        "path": "./tests/arabian_angelfish_short.mov",
+        "path": "./tests/media/arabian_angelfish_short.mov",
         "sample_every" :1
     }
 
@@ -52,6 +64,14 @@ def arabian_angelfish():
 def lutjanis():
     return {
         "type": "file",
-        "path": "./tests/lutjanis.mov",
+        "path": "./tests/media/lutjanis.mov",
+        "sample_every" :30
+    }
+
+@pytest.fixture
+def vehicles():
+    return {
+        "type": "file",
+        "path": "./tests/media/cam_04.mp4",
         "sample_every" :30
     }

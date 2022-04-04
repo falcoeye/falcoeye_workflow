@@ -69,3 +69,35 @@ def test_file_analysis(client,lutjanis,fishfinderw,fishfinderm):
         time.sleep(3)
         status = check_status(client,"test_video")
         print(status,flush=True)
+
+def test_multilabel_analysis(client,vehicles,veheyew,veheyem):
+
+    data = {
+        "analysis": {
+            "id": "test_multilabel"
+        },
+        "stream": vehicles,
+        "workflow": {
+            "structure":veheyew,   
+            "model":veheyem,
+            "args": {
+                "source_type":"video",
+                "output_path": "./tests/careye_veh.csv"
+            }
+        }
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    print(resp.json,resp.status_code)
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test_multilabel")
+    print(status,flush=True)
+    while status["workflow_status"]:
+        time.sleep(3)
+        status = check_status(client,"test_multilabel")
+        print(status,flush=True)

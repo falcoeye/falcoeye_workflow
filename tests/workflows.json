@@ -45,5 +45,56 @@
                 "output_path": "$output_path"
             }
         ]
+    },
+    "Vehicles Counter":{
+        "name": "Vehicles Counter",
+        "model": "CarEye",
+        "type": "ObjectDetection",
+        "framework": "torch",
+        "input_args": [
+            {
+                "name": "output_path",
+                "type": "str",
+                "required": true
+            },
+            {
+                "name": "source_type",
+                "type": "str",
+                "default": "video"
+            }
+        ],
+        "calculations": [
+            {
+                "type": "record_timestamp",
+                "name": "timestamp",
+                "source": "$source_type",
+                "on": "prediction"
+            },
+            {
+                "type": "type_counter",
+                "class": [
+                    "two-wheels",
+                    "four-wheels",
+                    "bus",
+                    "truck"],
+                "name": "veh_count_per_frame",
+                "on": "prediction"
+            },
+            {
+                "type": "put_on_pd",
+                "calculations": ["timestamp","veh_count_per_frame"],
+                "name": "veh_count",
+                "on": "calculation"
+            }
+        ],
+        "outputters":[
+            {
+                "name": "veh_count_outputter",
+                "io_handler": "csv",
+                "on": "calculation",
+                "calculation": "veh_count",
+                "output_path": "$output_path"
+            }
+        ]
     }
 }
