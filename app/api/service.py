@@ -31,7 +31,7 @@ class AnalysisService:
         # Creating workflow handler
         workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args)
 
-        print("Workflow created")
+        print("Workflow created",flush=True)
 
         # Keep reference to check on status without going to backend
         if current_app.config.get("TESTING"):
@@ -40,7 +40,7 @@ class AnalysisService:
         # Creating AI sink to stream frames into
         sink = AISink(analysis_id,modelHandler,workflowWorker)
 
-        print("Sink created")
+        print("Sink created",flush=True)
 
         if stream_type == "file":
             sample_every = stream.get("sample_every",1)
@@ -48,48 +48,45 @@ class AnalysisService:
             streamWorker = FileStreamWorker(workflowWorker,filepath,sample_every,sink)
 
         elif stream_type == "stream":
-            url = stream["url"]
-            provider = stream["provider"]
-            resolution = stream["resolution"]
-            sample_every = stream.get("sample_every",1)
-            length = stream.get("length",60)
-            streamWorker = WebStreamWorker(workflowWorker,url,provider,resolution,sample_every,length,sink)
+            streamWorker = WebStreamWorker(workflowWorker,sink,**stream)
 
-        print("Stream created")
+        print("Stream created",flush=True)
 
         # Start model container if not running
         started = modelHandler.start()
         if not started:
             return internal_err_resp()
         
-        print("Model worker started")
+        print("Model worker started",flush=True)
 
         # Start workflow 
         started = workflowWorker.start()
         if not started:
             return internal_err_resp()
 
-        print("Workflow worker started")
+        print("Workflow worker started",flush=True)
 
         # Start sink 
         started = sink.start()
         if not started:
             return internal_err_resp()
         
-        print("Sink worker started")
+        print("Sink worker started",flush=True)
 
         # Start streamer
         started = streamWorker.start()
         if not started:
             return internal_err_resp()
 
-        print("Streamer worker started")    
+        print("Streamer worker started",flush=True)    
 
         resp = message(True, "Anaysis has been started")
         return resp, 200
 
     @staticmethod
     def get_status(analysis_id):
+        print(analysis_id)
+        print(AnalysisService.ANALYSIS)
         if analysis_id in AnalysisService.ANALYSIS:
             worker = AnalysisService.ANALYSIS[analysis_id]
             response = {

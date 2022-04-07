@@ -3,11 +3,11 @@ from app.io import source
 import time
 
 class StreamerWorker:
-    def __init__(self,workflowWorker,sample_every,sink):
+    def __init__(self,workflowWorker,sink,sample_every):
         self._workflowWorker = workflowWorker
         self._streamer = None
-        self._sample_every = sample_every
         self._sink = sink
+        self._sample_every = sample_every
     
     def start(self):
         self._streamer.open()
@@ -51,20 +51,13 @@ class FileStreamWorker(StreamerWorker):
         self.done_callback()
 
 class WebStreamWorker(StreamerWorker):
-    def __init__(self,workflowWorker,url,stream_provider,resolution,sample_every,length,sink):
-        StreamerWorker.__init__(self,workflowWorker,sample_every,sink)
-        self._url = url
-        self._stream_provider = stream_provider
-        self._resolution = resolution
-        self._length = length
-
-    def start(self):
-        self._streamer = source.create_web_streamer(self._url, 
-            self._stream_provider,
-            self._resolution,
-            self._sample_every,
-            self._length)
+    def __init__(self,workflowWorker,sink,**streamer_args):
+        StreamerWorker.__init__(self,workflowWorker,sink,streamer_args["sample_every"])
+        self._length = streamer_args.get("length",60)
+        self._streamer_args = streamer_args
         
+    def start(self):
+        self._streamer = source.create_web_streamer(**self._streamer_args)
         return StreamerWorker.start(self)
     
     def stream(self):

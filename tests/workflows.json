@@ -96,5 +96,52 @@
                 "output_path": "$output_path"
             }
         ]
+    },
+    "Human Counter":{
+        "name": "Human Counter",
+        "model": "Human Counter",
+        "type": "ObjectDetection",
+        "framework": "tensorflow",
+        "input_args": [
+            {
+                "name": "output_path",
+                "type": "str",
+                "required": true
+            },
+            {
+                "name": "source_type",
+                "type": "str",
+                "default": "video"
+            }
+        ],
+        "calculations": [
+            {
+                "type": "record_timestamp",
+                "name": "timestamp",
+                "source": "$source_type",
+                "on": "prediction"
+            },
+            {
+                "type": "type_counter",
+                "class": "person",
+                "name": "human_count_per_frame",
+                "on": "prediction"
+            },
+            {
+                "type": "put_on_pd",
+                "calculations": ["timestamp","human_count_per_frame"],
+                "name": "human_count",
+                "on": "calculation"
+            }
+        ],
+        "outputters":[
+            {
+                "name": "human_count_outputter",
+                "io_handler": "csv",
+                "on": "calculation",
+                "calculation": "human_count",
+                "output_path": "$output_path"
+            }
+        ]
     }
 }

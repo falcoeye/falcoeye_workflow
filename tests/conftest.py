@@ -41,6 +41,19 @@ def veheyem():
         return json.load(f)["Vehicles Counter"]
 
 @pytest.fixture
+def humanw():
+    # TODO: Should come from backend
+    with open("./tests/workflows.json") as f:
+        return json.load(f)["Human Counter"]
+
+@pytest.fixture
+def humanm():
+    # TODO: Should come from backend
+    with open("./tests/models.json") as f:
+        return json.load(f)["Human Counter"]
+
+
+@pytest.fixture
 def harbour():
     return {
         "type": "stream",
@@ -48,6 +61,19 @@ def harbour():
         "resolution": "720p",
         "sample_every" :2,
         "provider": "youtube",
+        "length": 60
+    }
+
+@pytest.fixture
+def ezviz():
+    return {
+        "type": "stream",
+        "ipv4": "139.64.63.135",
+        "port": "554",
+        "username": "admin",
+        "password": "MWJUES",
+        "sample_every" :10,
+        "provider": "rtsp",
         "length": 60
     }
 

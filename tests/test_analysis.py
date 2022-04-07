@@ -1,5 +1,10 @@
 import json
 import time
+import os
+import errno
+
+DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 def check_status(client,analysis_id):
     resp = client.get(f"/api/analysis/status/{analysis_id}")
@@ -100,4 +105,35 @@ def test_multilabel_analysis(client,vehicles,veheyew,veheyem):
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_multilabel")
+        print(status,flush=True)
+
+def test_rtsp_camera(client,ezviz,humanw,humanm):
+    data = {
+        "analysis": {
+            "id": "test_rtsp"
+        },
+        "stream": ezviz,
+        "workflow": {
+            "structure":humanw,   
+            "model":humanm,
+            "args": {
+                "source_type":"stream",
+                "output_path": "./tests/human.csv"
+            }
+        }
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    print(resp.json,resp.status_code)
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test_rtsp")
+    print(status,flush=True)
+    while status["workflow_status"]:
+        time.sleep(3)
+        status = check_status(client,"test_rtsp")
         print(status,flush=True)

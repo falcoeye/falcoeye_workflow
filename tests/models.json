@@ -17,5 +17,14 @@
         "size": "1024",
         "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/vehicles/vehcounter/yolov5/prod/",
         "deployment_type": "checkpoint"
+    },
+    "Human Counter":{
+        "name": "Human Counter",
+        "task": "detection",
+        "framework": "tensorflow",
+        "base_arch": "frcnn",
+        "size": "1024",
+        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/human/humancounter_v2/humancounter_tf_frcnn_1024x1024/prod/",
+        "deployment_type": "checkpoint"
     }
 }

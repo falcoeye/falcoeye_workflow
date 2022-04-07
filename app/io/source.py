@@ -56,7 +56,7 @@ class FileSource:
 class StreamSource:
     resolutions = {"best": {"width": 1920, "height": 1080}}
 
-    def __init__(self, url, queue_size=2000, resolution="best", sample_every=5, length=30):
+    def __init__(self, url,  resolution="best", sample_every=5, length=30,queue_size=2000,):
         self.stopped = False
         self.url = url
         self.resolution = resolution
@@ -158,7 +158,7 @@ class StreamSource:
 class AngelCamSource(StreamSource):
     resolution = {"best": {"width": 1920, "height": 1080}}
 
-    def __init__(self, url, queue_size=2000, resolution="best", sample_every=5, end=30):
+    def __init__(self, url,  resolution="best", sample_every=5, length=60,queue_size=2000):
         StreamSource.__init__(self, url, queue_size, resolution, sample_every, end)
         self.m3u8 = None
 
@@ -201,7 +201,7 @@ class YoutubeSource(StreamSource):
     }
 
     def __init__(
-        self, url, queue_size=2000, resolution="1080p", sample_every=5, length=30):
+        self, url, resolution="1080p", sample_every=5, length=30,queue_size=2000):
         StreamSource.__init__(self, url, queue_size, resolution, sample_every, length)
         self.width = YoutubeSource.resolutions[resolution]["width"]
         self.height = YoutubeSource.resolutions[resolution]["height"]
@@ -270,15 +270,47 @@ class YoutubeSource(StreamSource):
         pipe.kill()
         return True
 
-def create_web_streamer(url, provider, resolution, sample_every, length):
-    if provider == "angelcam":
-        return AngelCamSource(
-            url, resolution=resolution, sample_every=sample_every, length=length
-        )
-    elif provider == "youtube":
-        return YoutubeSource(
-            url, resolution=resolution, sample_every=sample_every, length=length
-        )
+class RTSPSource(Source):
+    def __init__(self,ipv4,port=554,username=None,password=None):
+        self._ipv4 = ipv4
+        self._port = port
+        self._username = username
+        self._password = password
+        self._url = f"rtsp://"
+        if username:
+            self._url += f'{username}:{password}@'
+        self._url += f'{ipv4}:{port}/Streaming/Channels/1'
+        self._cap = None
+
+    def open(self):
+        self._cap = cv2.VideoCapture(self._url)
+
+    def read(self):
+        ret, frame = self._cap.read()
+        return ret,frame
+
+    def close(self):
+        if self._cap:
+            self._cap.release()
+        self._cap = None
+
+def create_web_streamer(provider,**args):
+    cams = {
+        "youtube": YoutubeSource,
+        "angelcam": AngelCamSource
+    }
+    if provider == "youtube" or provider == "angelcam":
+        url = args["url"]
+        resolution = args["resolution"]
+        sample_every = args["sample_every"]
+        length = args["length"]
+        return cams[provider](url, resolution, sample_every, length)
+    elif provider == "rtsp":
+        ipv4 = args["ipv4"]
+        port = args["port"]
+        username = args["username"]
+        password = args["password"]
+        return RTSPSource(ipv4,port,username,password)
 
 def create_file_streamer(filepath, sample_every):
     return FileSource(filepath)
