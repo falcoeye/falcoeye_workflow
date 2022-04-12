@@ -44,7 +44,7 @@ class MultiVideosWriter:
 
         height, width = data[0][0].shape[:2]
         for i, segment in enumerate(data):
-            sink = FileSink(f"{self._prefix}_{i}.mp4")
+            sink = VideoFileSink(f"{self._prefix}_{i}.mp4")
             sink.open(30, width, height)
             for frame in segment:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
