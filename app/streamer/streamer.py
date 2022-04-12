@@ -25,8 +25,8 @@ class StreamerWorker:
         self._sink.close()
 
 class FileStreamWorker(StreamerWorker):
-    def __init__(self,workflowWorker,filepath,sample_every,sink):
-        StreamerWorker.__init__(self,workflowWorker,sample_every,sink)
+    def __init__(self,workflowWorker,filepath,sink,sample_every):
+        StreamerWorker.__init__(self,workflowWorker,sink,sample_every)
         self._filepath = filepath 
     
     def start(self):

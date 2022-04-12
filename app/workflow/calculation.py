@@ -102,10 +102,8 @@ class ObjectMonitor:
                 and self._toMissCounter < self._allowedToMiss
             ):
                 self._toMissCounter += 1
-                print(f"Missed the object {self._toMissCounter}/{self._allowedToMiss}")
                 return
             elif nobject <= 0:
-                print(f"False alarm. Resetting")
                 self._triggerCount = 0
                 self._triggeredOnce = False
                 self._toMissCounter = 0
@@ -115,9 +113,7 @@ class ObjectMonitor:
             self._triggeredOnce = True
             self._triggerCount += 1
             self._toMissCounter = 0
-            print(f"Found the object {self._triggerCount}")
             if self._triggerCount >= self._minToTriggerIn:
-                print(f"Triggered in {len(self._frames)}")
                 self._status = 1
                 self._frames.append([f for f in self._buffer])
                 self._buffer = []
@@ -133,7 +129,6 @@ class ObjectMonitor:
                 self._triggerCount = 0
 
             if self._triggerCount >= self._minToTriggerOut:
-                print(f"Triggered out {len(self._frames)} with {len(self._frames[-1])}")
                 self._status = 0
                 self._triggerCount = 0
                 self._triggeredOnce = False

@@ -8,12 +8,14 @@
             {
                 "name": "output_path",
                 "type": "str",
-                "required": true
+                "required": true,
+                "source": "system"
             },
             {
                 "name": "source_type",
                 "type": "str",
-                "default": "video"
+                "default": "video",
+                "source": "system"
             }
         ],
         "calculations": [
@@ -55,12 +57,14 @@
             {
                 "name": "output_path",
                 "type": "str",
-                "required": true
+                "required": true,
+                "source": "system"
             },
             {
                 "name": "source_type",
                 "type": "str",
-                "default": "video"
+                "default": "video",
+                "source": "system"
             }
         ],
         "calculations": [
@@ -106,12 +110,14 @@
             {
                 "name": "output_path",
                 "type": "str",
-                "required": true
+                "required": true,
+                "source": "system"
             },
             {
                 "name": "source_type",
                 "type": "str",
-                "default": "video"
+                "default": "video",
+                "source": "system"
             }
         ],
         "calculations": [
@@ -141,6 +147,114 @@
                 "on": "calculation",
                 "calculation": "human_count",
                 "output_path": "$output_path"
+            }
+        ]
+    },
+    "KAUST Fourtythree Fish":{
+        "name": "KAUST Fourtythree Fish",
+        "model": "FourtyThree Fish SSD",
+        "type": "ObjectDetection",
+        "framework": "tensorflow",
+        "input_args": [
+            {
+                "name": "source_type",
+                "type": "str",
+                "default": "video",
+                "source": "system"
+            },
+            {
+                "name": "object_name",
+                "type": "str",
+                "default": null,
+                "required":true,
+                "options": [
+                    "Arabian Angelfish",
+                    "Arabian Bluestriped Snapper",
+                    "Barracudas",
+                    "Big Squirrelfish",
+                    "Black Surgeonfish",
+                    "Blackspotted Rubberlips",
+                    "Blacktail Dartfish",
+                    "Bluefin Trevally",
+                    "Bluespine Unicornfish",
+                    "Breams",
+                    "Empror",
+                    "Fourline Wrasse",
+                    "Humpback Snapper",
+                    "Longnose Parrotfish",
+                    "Lutjanus",
+                    "Malabar Grouper",
+                    "Mangrove Red Snapper",
+                    "Moon Wrasse",
+                    "Moonfish",
+                    "Onespot Snapper",
+                    "Picasso Triggerfish",
+                    "Rabbitfish",
+                    "Racoon Butterflyfish",
+                    "Redbreasted Wrasse",
+                    "Redsea Bannerfish",
+                    "Redsea Demoiselle",
+                    "Redsea Goatfish",
+                    "Sky Empror",
+                    "Small Threeline Damselfish",
+                    "Smalltooth Empror",
+                    "Sohl Sergionfish",
+                    "Splendour Wrasse",
+                    "Squirrelfish",
+                    "Striated Fusilier",
+                    "Striated Surgeonfish",
+                    "Threeline Damselfish",
+                    "Titan Triggerfish",
+                    "Whitefaced Butterflyfish",
+                    "Yellowfin Hind"
+                ],
+                "source": "user"
+            },
+            {
+                "name": "min_to_trigger_in",
+                "type": "int",
+                "default": 5,
+                "required":true,
+                "source": "user"
+            },
+            {
+                "name": "min_to_trigger_out",
+                "type": "int",
+                "default": 5,
+                "required":true,
+                "source": "user"
+            },
+            {
+                "name": "output_prefix",
+                "type": "str",
+                "default": null,
+                "required":true,
+                "source": "system"
+            }
+        ],
+        "calculations": [
+            {
+                "type": "record_timestamp",
+                "name": "timestamp",
+                "source": "$source_type",
+                "on": "prediction"
+            },
+            {
+                "type": "object_monitor",
+                "name": "fish_monitor",
+                "object_name": "$object_name",
+                "min_to_trigger_in": "$min_to_trigger_in",
+                "min_to_trigger_out": "$min_to_trigger_out",
+                "on": "prediction"
+            }
+        ],
+        "outputters":[
+            {
+                "name": "multi_videos_outputter",
+                "io_handler": "multivideos",
+                "on": "calculation",
+                "calculation": "fish_monitor",
+                "output_prefix": "$output_prefix"
             }
         ]
     }

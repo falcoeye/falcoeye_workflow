@@ -3,6 +3,8 @@ from PIL import Image
 import socket
 from queue import Queue
 import threading
+from datetime import datetime
+
 
 class Sink:
     def __init__(self):
@@ -73,8 +75,10 @@ class AISink(Sink):
     def start_(self):
         while self._still or self.more():
             if self.more():
+                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"New data to sink")
                 frame,data = self._queue.get()
                 results_path =  self._modelHandler.predict(frame,data)
+                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Results received")
                 self._wf_handler.put(results_path)
         self._wf_handler.done_sinking()
         

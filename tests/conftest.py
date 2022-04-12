@@ -28,6 +28,19 @@ def fishfinderm():
     with open("./tests/models.json") as f:
         return json.load(f)["KAUST Fish Finder"]
 
+
+@pytest.fixture
+def fourtythreefishw():
+    # TODO: Should come from backend
+    with open("./tests/workflows.json") as f:
+        return json.load(f)["KAUST Fourtythree Fish"]
+
+@pytest.fixture
+def fourtythreefishm():
+    # TODO: Should come from backend
+    with open("./tests/models.json") as f:
+        return json.load(f)["FourtyThree Fish SSD"]
+
 @pytest.fixture
 def veheyew():
     # TODO: Should come from backend
@@ -82,7 +95,7 @@ def ezviz():
 def arabian_angelfish():
     return {
         "type": "file",
-        "path": "./tests/media/arabian_angelfish_short.mov",
+        "path": "./tests/media/arabian_angelfish.mov",
         "sample_every" :1
     }
 

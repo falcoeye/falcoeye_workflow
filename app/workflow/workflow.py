@@ -9,6 +9,8 @@ from app.ai.detection import FalcoeyeVideoDetection
 from app.utils import check_type
 from .calculation import *
 from .outputter import CalculationOutputter
+from datetime import datetime
+
 
 
 class Workflow:
@@ -55,7 +57,6 @@ class ObjectDetectionWorkflow(Workflow):
 
     def fill_args(self, args):
         for a in self._args:
-            print(a)
             atype = a["type"]
             aname = a["name"]
             adefault = a.get("default", None)
@@ -210,6 +211,7 @@ class WorkflowHandler:
     def start_calculator_(self):
         while self._still_streaming or self._still_sinking or self.more():
             if self.more():
+                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"New results calculating")
                 frame,results = self.fetch_results()
                 falcoeye_detection = FalcoeyeVideoDetection(
                     results["detection"], results["category_map"], 

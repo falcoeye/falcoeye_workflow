@@ -45,7 +45,7 @@ class AnalysisService:
         if stream_type == "file":
             sample_every = stream.get("sample_every",1)
             filepath = stream["path"]
-            streamWorker = FileStreamWorker(workflowWorker,filepath,sample_every,sink)
+            streamWorker = FileStreamWorker(workflowWorker,filepath,sink,sample_every)
 
         elif stream_type == "stream":
             streamWorker = WebStreamWorker(workflowWorker,sink,**stream)
@@ -85,8 +85,6 @@ class AnalysisService:
 
     @staticmethod
     def get_status(analysis_id):
-        print(analysis_id)
-        print(AnalysisService.ANALYSIS)
         if analysis_id in AnalysisService.ANALYSIS:
             worker = AnalysisService.ANALYSIS[analysis_id]
             response = {

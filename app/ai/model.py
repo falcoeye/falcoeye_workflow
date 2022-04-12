@@ -3,7 +3,7 @@ import requests
 import numpy as np
 import io
 from PIL import Image
-
+from datetime import datetime
 class ModelContainer:
     def __init__(self,server=None):
         self._server = server
@@ -21,9 +21,11 @@ class ModelContainer:
         return self._running
 
     def send(self,frame,data):
+        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Packaging data")
         buf = io.BytesIO()
         Image.fromarray(frame).save(buf, format='PNG')
         buf.seek(0)
+        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Sending package")
         response = requests.post(f"{self._server}",params=data,files=[('frame', buf)]).text.replace("\"","")
 
         return response

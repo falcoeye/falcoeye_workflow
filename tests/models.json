@@ -26,5 +26,14 @@
         "size": "1024",
         "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/human/humancounter_v2/humancounter_tf_frcnn_1024x1024/prod/",
         "deployment_type": "checkpoint"
+    },
+    "FourtyThree Fish SSD":{
+        "name": "FourtyThree Fish SSD",
+        "task": "detection",
+        "framework": "tensorflow",
+        "base_arch": "frcnn",
+        "size": "1024",
+        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/fourtythree/kaust_tf_ssd_1024x1024/vit_1_5/",
+        "deployment_type": "frozen"
     }
 }

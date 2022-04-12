@@ -137,3 +137,37 @@ def test_rtsp_camera(client,ezviz,humanw,humanm):
         time.sleep(3)
         status = check_status(client,"test_rtsp")
         print(status,flush=True)
+
+def test_cut_video_segments(client,arabian_angelfish,fourtythreefishw,fourtythreefishm):
+
+    data = {
+        "analysis": {
+            "id": "test_cut_video_segments"
+        },
+        "stream": arabian_angelfish,
+        "workflow": {
+            "structure":fourtythreefishw,   
+            "model":fourtythreefishm,
+            "args": {
+                "source_type":"video",
+                "output_prefix": "./tests/arabian_angelfish",
+                "object_name" : "arabian_angelfish",
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+            }
+        }
+    }
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    print(resp.json,resp.status_code)
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test_cut_video_segments")
+    print(status,flush=True)
+    while status["workflow_status"]:
+        time.sleep(3)
+        status = check_status(client,"test_cut_video_segments")
+        print(status,flush=True)
