@@ -10,6 +10,8 @@ from app.utils import check_type
 from .calculation import *
 from .outputter import CalculationOutputter
 from datetime import datetime
+import requests
+import glob 
 
 
 
@@ -143,7 +145,7 @@ class ObjectDetectionWorkflow(Workflow):
     def output(self):
         for o in self._outputters:
             o.run()
- 
+
 class WorkflowHandler:
     def __init__(self,analysis_id,workflow_structure,workflow_args):
         self._analysis_id = analysis_id
@@ -155,14 +157,37 @@ class WorkflowHandler:
         
         self._model = workflow_structure["model"]
         self._datafetcher = LocalStorageDataFetcher()
-        
-        self._still_streaming = False
-        self._still_sinking = False
-        self._queue = Queue()
         self._running = False
 
     def fill_args(self,data):
         self._w.fill_args(data)
+    
+    def is_running(self):
+        return self._running
+    
+    def start(self):
+        b_thread = threading.Thread(
+                target=self.start_calculator_,
+                args=(),
+            )
+        b_thread.daemon = True
+    
+        b_thread.start()
+        self._running = True
+        return b_thread.is_alive()
+    
+    def done_(self):
+        self._running = False
+        # TODO: postback to backend
+        pass
+
+class LocalStreamingWorkFlowHandler(WorkflowHandler):
+    def __init__(self,analysis_id,workflow_structure,workflow_args):
+        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args)
+        self._still_streaming = False
+        self._still_sinking = False
+        self._queue = Queue()
+        
     
     def more(self):
         return self._queue.qsize() > 0
@@ -187,20 +212,12 @@ class WorkflowHandler:
         b_thread.start()
         self._running = True
         return b_thread.is_alive()
-    
-    def is_running(self):
-        return self._running
 
     def is_sinking(self):
         return self._still_sinking
 
     def is_streaming(self):
         return self._still_streaming
-
-    def done_(self):
-        self._running = False
-        # TODO: postback to backend
-        pass
 
     def done_streaming(self):
         self._still_streaming = False
@@ -222,13 +239,57 @@ class WorkflowHandler:
         self._w.output()
         self.done_()
 
+class RemoteStreamingWorkflowHandler(WorkflowHandler):
+    def __init__(self,analysis_id,workflow_structure,workflow_args,filepath,sample_every):
+        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args)
+        self._server = "http://0.0.0.0:8000/predict_stream/"
+        self._filepath = filepath
+        self._sample_every = sample_every
+
+    def fetch_results(self,resultsPath):
+        for rp in sorted(glob.glob(f"{resultsPath}/*")):
+            frame,results = self._datafetcher.fetch(rp)
+            yield frame, results
+    
+    def start_calculator_(self):
+        
+        response = requests.post(self._server,
+            params={"analysis_id":self._analysis_id,
+                "file_path":self._filepath,
+                "sample_every":self._sample_every})
+
+        resultsPath = response.text.replace("\"","")
+        # while True:
+        #     print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Not yet ready")
+        #     time.sleep(10)
+        
+        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Start calculating")
+        for frame,results in self.fetch_results(resultsPath):
+            falcoeye_detection = FalcoeyeVideoDetection(
+                results["detection"], results["category_map"], 
+                results["count"], results["init_time"]
+            )
+            self._w.calculate_on_prediction(frame, falcoeye_detection)
+
+        self._w.calculate_on_calculation()
+        self._w.output()
+        self.done_()
+
+    
+
 class WorkflowFactory:
     def __init__(self):
         pass
 
     @staticmethod
-    def create(analysis_id,workflow_structure,workflow_args):
-        w = WorkflowHandler(analysis_id,workflow_structure,workflow_args)
+    def create(analysis_id,workflow_structure,workflow_args,streaming,**args):
+        if streaming == "local":
+            w = LocalStreamingWorkFlowHandler(analysis_id,workflow_structure,workflow_args)
+        elif streaming == "remote":
+            w = RemoteStreamingWorkflowHandler(analysis_id,workflow_structure,workflow_args,args["path"],args["sample_every"])
+        else:
+            raise NotImplementedError
+
         return w
         
 

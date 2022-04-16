@@ -3,6 +3,8 @@ import pytest
 from app import create_app
 from app.workflow import WorkflowFactory
 import json 
+import os
+DIR = os.path.dirname(os.path.realpath(__file__))
 
 @pytest.fixture
 def app():
@@ -95,7 +97,15 @@ def ezviz():
 def arabian_angelfish():
     return {
         "type": "file",
-        "path": "./tests/media/arabian_angelfish.mov",
+        "path": f"{DIR}/media/arabian_angelfish.mov",
+        "sample_every" :1
+    }
+
+@pytest.fixture
+def arabian_angelfish_short():
+    return {
+        "type": "file",
+        "path": f"{DIR}/media/arabian_angelfish_short.mov",
         "sample_every" :1
     }
 

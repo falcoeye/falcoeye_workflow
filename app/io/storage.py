@@ -19,7 +19,8 @@ class LocalStorageDataFetcher(DataFetcher):
     
     def fetch(self,path):
         for k,v in self._replace.items():
-            path = path.replace(k,v)
+            if path.startswith(k):
+                path = path.replace(k,v)
             
         with open(f'{path}/prediction.json') as f:
             prediction = json.load(f)

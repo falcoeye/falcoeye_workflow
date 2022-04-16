@@ -25,10 +25,9 @@ class LocalDataFetcher(DataFetcher):
         with open(resultsPath) as f2:
             results = json.load(f2)
         return frame,results
-        
 
-class WorkflowHandler:
-    def __init__(self,analysis_id,workflow_dict,workflow_args):
+class WorkflowHandler: 
+     def __init__(self,analysis_id,workflow_dict,workflow_args):
         self._analysis_id = analysis_id
         w = ObjectDetectionWorkflow()
         w._args = workflow_dict["input_args"]
@@ -38,17 +37,18 @@ class WorkflowHandler:
         w.fill_args(workflow_args)
         self._model = workflow_dict["model"]
         self._datafetcher = LocalDataFetcher()
-        
         self._w = w
-        self._still = False
-        self._queue = Queue()
-        self._done_callback = None
+        
 
     def fill_args(self,data):
         self._w.fill_args(data)
-    
-    def initialize(self):
-        
+
+
+class LocalStreamingWorkflowHandler:
+    def __init__(self,analysis_id,workflow_dict,workflow_args):
+        WorkflowHandler.__init__(self,analysis_id,workflow_dict,workflow_args)
+        self._still = False
+        self._queue = Queue()
 
     def put(self,results):
         self._queue.put(results)
@@ -61,17 +61,13 @@ class WorkflowHandler:
         frame,results = self._datafetcher.fetch(resultsData)
         return frame,results
 
-    def start(self,callback):
-        self._done_callback = callback
+    def start(self):
         self._still = True
         b_thread = threading.Thread(
                 target=WorkflowHandler.start_calculator,
                 args=self,
             )
         b_thread.start()
-    
-    def done_callback(self):
-        self._done_callback(self._analysis_id)
 
     def more(self):
         return self._queue.qsize() > 0
@@ -84,7 +80,6 @@ class WorkflowHandler:
                 handler._w.calculate_on_prediction(frame, results)
         handler._w.calculate_on_calculation()
         handler._w.output()
-        handler.done_callback()
 
 
 class WorkflowFactory:
@@ -97,7 +92,7 @@ class WorkflowFactory:
         workflow_name = workflow["name"]
         workflow_args = workflow["args"]
         workflow_dict = self._workflows[workflow_name]
-        w = WorkflowHandler(analysis_id,workflow_dict,workflow_args)
+        w = LocalStreamingWorkflowHandler(analysis_id,workflow_dict,workflow_args)
         return w
         
 
