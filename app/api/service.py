@@ -6,7 +6,7 @@ from app.streamer import WebStreamWorker,FileStreamWorker
 from app.io.sink import AISink
 from app.workflow.workflow import WorkflowFactory,LocalStreamingWorkFlowHandler,RemoteStreamingWorkflowHandler
 from app.ai import ModelHandler
-
+import logging
 
 class AnalysisService:
     # Used for testing purposes only
@@ -40,7 +40,7 @@ class AnalysisService:
         # Creating workflow handler
         workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"remote",**stream)
 
-        print("Workflow created",flush=True)
+        logging.info("Workflow created")
 
         # Keep reference to check on status without going to backend
         if current_app.config.get("TESTING"):
@@ -52,14 +52,14 @@ class AnalysisService:
         if not started:
             return internal_err_resp()
         
-        print("Model worker started",flush=True)
+        logging.info("Model worker started")
 
         # Start workflow 
         started = workflowWorker.start()
         if not started:
             return internal_err_resp()
 
-        print("Workflow worker started",flush=True)
+        logging.info("Workflow worker started")
 
         resp = message(True, "Anaysis has been started")
         return resp, 200
@@ -84,7 +84,7 @@ class AnalysisService:
         # Creating workflow handler
         workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"local")
 
-        print("Workflow created",flush=True)
+        logging.info("Workflow created")
 
         # Keep reference to check on status without going to backend
         if current_app.config.get("TESTING"):
@@ -93,7 +93,7 @@ class AnalysisService:
         # Creating AI sink to stream frames into
         sink = AISink(analysis_id,modelHandler,workflowWorker)
 
-        print("Sink created",flush=True)
+        logging.info("Sink created")
 
         if stream_type == "file":
             sample_every = stream.get("sample_every",1)
@@ -103,35 +103,35 @@ class AnalysisService:
         elif stream_type == "stream":
             streamWorker = WebStreamWorker(workflowWorker,sink,**stream)
 
-        print("Stream created",flush=True)
+        logging.info("Stream created")
 
         # Start model container if not running
         started = modelHandler.start()
         if not started:
             return internal_err_resp()
         
-        print("Model worker started",flush=True)
+        logging.info("Model worker started")
 
         # Start workflow 
         started = workflowWorker.start()
         if not started:
             return internal_err_resp()
 
-        print("Workflow worker started",flush=True)
+        logging.info("Workflow worker started")
 
         # Start sink 
         started = sink.start()
         if not started:
             return internal_err_resp()
         
-        print("Sink worker started",flush=True)
+        logging.info("Sink worker started")
 
         # Start streamer
         started = streamWorker.start()
         if not started:
             return internal_err_resp()
 
-        print("Streamer worker started",flush=True)    
+        logging.info("Streamer worker started")    
 
         resp = message(True, "Anaysis has been started")
         return resp, 200

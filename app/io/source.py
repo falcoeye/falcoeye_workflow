@@ -56,7 +56,7 @@ class FileSource:
 class StreamSource:
     resolutions = {"best": {"width": 1920, "height": 1080}}
 
-    def __init__(self, url,  resolution="best", sample_every=5, length=30,queue_size=2000,):
+    def __init__(self, url,  resolution="best", sample_every=5, length=30,queue_size=2000):
         self.stopped = False
         self.url = url
         self.resolution = resolution
@@ -202,7 +202,7 @@ class YoutubeSource(StreamSource):
 
     def __init__(
         self, url, resolution="1080p", sample_every=5, length=30,queue_size=2000):
-        StreamSource.__init__(self, url, queue_size, resolution, sample_every, length)
+        StreamSource.__init__(self, url, resolution, sample_every, length,queue_size)
         self.width = YoutubeSource.resolutions[resolution]["width"]
         self.height = YoutubeSource.resolutions[resolution]["height"]
         self.pipe = None

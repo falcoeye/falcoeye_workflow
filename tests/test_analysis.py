@@ -2,6 +2,12 @@ import json
 import time
 import os
 import errno
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -37,11 +43,11 @@ def test_web_analysis(client,harbour,fishfinderw,fishfinderm):
     assert resp.status_code == 200   
 
     status = check_status(client,"test_stream")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_stream")
-        print(status,flush=True)
+        logging.info(status)
 
 def test_file_analysis(client,lutjanis,fishfinderw,fishfinderm):
 
@@ -65,15 +71,15 @@ def test_file_analysis(client,lutjanis,fishfinderw,fishfinderm):
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
     status = check_status(client,"test_video")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_video")
-        print(status,flush=True)
+        logging.info(status)
 
 def test_multilabel_analysis(client,vehicles,veheyew,veheyem):
 
@@ -97,15 +103,15 @@ def test_multilabel_analysis(client,vehicles,veheyew,veheyem):
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
     status = check_status(client,"test_multilabel")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_multilabel")
-        print(status,flush=True)
+        logging.info(status)
 
 def test_rtsp_camera(client,ezviz,humanw,humanm):
     data = {
@@ -128,15 +134,15 @@ def test_rtsp_camera(client,ezviz,humanw,humanm):
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
     status = check_status(client,"test_rtsp")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_rtsp")
-        print(status,flush=True)
+        logging.info(status)
 
 def test_cut_video_segments(client,arabian_angelfish_short,fourtythreefishw,fourtythreefishm):
 
@@ -162,15 +168,15 @@ def test_cut_video_segments(client,arabian_angelfish_short,fourtythreefishw,four
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
     status = check_status(client,"test_cut_video_segments")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"test_cut_video_segments")
-        print(status,flush=True)
+        logging.info(status)
 
 def test_remote_cut_video_segments(client,arabian_angelfish_short,fourtythreefishw,fourtythreefishm):
 
@@ -197,12 +203,45 @@ def test_remote_cut_video_segments(client,arabian_angelfish_short,fourtythreefis
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
     status = check_status(client,"remote_test_cut_video_segments")
-    print(status,flush=True)
+    logging.info(status)
     while status["workflow_status"]:
         time.sleep(3)
         status = check_status(client,"remote_test_cut_video_segments")
-        print(status,flush=True)
+        logging.info(status)
+
+def test_remote_web_analysis(client,harbour,fishfinderw,fishfinderm):
+
+    data = {
+        "analysis": {
+            "id": "test_remote_web_analysis"
+        },
+        "stream": harbour,
+        "remote_stream": True,
+        "workflow": {
+            "structure":fishfinderw,   
+            "model":fishfinderm,
+            "args": {
+                "source_type":"stream",
+                "output_path": "./tests/fishfinder_harbour.csv"
+            }
+        }
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test_remote_web_analysis")
+    logging.info(status)
+    while status["workflow_status"]:
+        time.sleep(3)
+        status = check_status(client,"test_remote_web_analysis")
+        logging.info(status)
+

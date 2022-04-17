@@ -12,6 +12,7 @@ from .outputter import CalculationOutputter
 from datetime import datetime
 import requests
 import glob 
+import logging
 
 
 
@@ -46,7 +47,7 @@ class Workflow:
                 try:
                     d[k] = self._resources[v[1:]]
                 except KeyError as e:
-                    print(f"Interpretation error: couldn't interpret {v} in {k}")
+                    logging.info(f"Interpretation error: couldn't interpret {v} in {k}")
                     exit(0)
         return d
         
@@ -64,7 +65,7 @@ class ObjectDetectionWorkflow(Workflow):
             adefault = a.get("default", None)
             required = a.get("required", False)
             if adefault is None and required and aname not in args:
-                print(
+                logging.error(
                     f"Error: You must provide a valid {aname} for the workflow to start"
                 )
                 exit()
@@ -74,7 +75,7 @@ class ObjectDetectionWorkflow(Workflow):
                 if not check_type(v, atype) and v is not None:
                     vc = try_cast(v, atype)
                     if not vc:
-                        print(
+                        logging.error(
                             f"Error: Type of {aname} != {atype} and neither can be casted to it"
                         )
                         exit()
@@ -228,7 +229,7 @@ class LocalStreamingWorkFlowHandler(WorkflowHandler):
     def start_calculator_(self):
         while self._still_streaming or self._still_sinking or self.more():
             if self.more():
-                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"New results calculating")
+                logging.info("New results calculating")
                 frame,results = self.fetch_results()
                 falcoeye_detection = FalcoeyeVideoDetection(
                     results["detection"], results["category_map"], 
@@ -240,11 +241,16 @@ class LocalStreamingWorkFlowHandler(WorkflowHandler):
         self.done_()
 
 class RemoteStreamingWorkflowHandler(WorkflowHandler):
-    def __init__(self,analysis_id,workflow_structure,workflow_args,filepath,sample_every):
+    def __init__(self,analysis_id,workflow_structure,workflow_args,**args):
         WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args)
-        self._server = "http://0.0.0.0:8000/predict_stream/"
-        self._filepath = filepath
-        self._sample_every = sample_every
+        self._server = "http://0.0.0.0:8000"
+        self._stream_extensions = {
+            "file": "predict_file",
+            "stream": "predict_webstream"
+        }
+        self._stream_args = args
+        # because the AI container would require this for any post
+        self._stream_args["analysis_id"] = analysis_id
 
     def fetch_results(self,resultsPath):
         for rp in sorted(glob.glob(f"{resultsPath}/*")):
@@ -252,18 +258,13 @@ class RemoteStreamingWorkflowHandler(WorkflowHandler):
             yield frame, results
     
     def start_calculator_(self):
-        
-        response = requests.post(self._server,
-            params={"analysis_id":self._analysis_id,
-                "file_path":self._filepath,
-                "sample_every":self._sample_every})
-
+        stream_type = self._stream_args["type"]
+        stream_extension = self._stream_extensions[stream_type]
+        response = requests.post(f'{self._server}/{stream_extension}',
+            params=self._stream_args)
         resultsPath = response.text.replace("\"","")
-        # while True:
-        #     print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Not yet ready")
-        #     time.sleep(10)
-        
-        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Start calculating")
+
+        logging.info("Start calculating")
         for frame,results in self.fetch_results(resultsPath):
             falcoeye_detection = FalcoeyeVideoDetection(
                 results["detection"], results["category_map"], 
@@ -275,8 +276,6 @@ class RemoteStreamingWorkflowHandler(WorkflowHandler):
         self._w.output()
         self.done_()
 
-    
-
 class WorkflowFactory:
     def __init__(self):
         pass
@@ -286,7 +285,7 @@ class WorkflowFactory:
         if streaming == "local":
             w = LocalStreamingWorkFlowHandler(analysis_id,workflow_structure,workflow_args)
         elif streaming == "remote":
-            w = RemoteStreamingWorkflowHandler(analysis_id,workflow_structure,workflow_args,args["path"],args["sample_every"])
+            w = RemoteStreamingWorkflowHandler(analysis_id,workflow_structure,workflow_args,**args)
         else:
             raise NotImplementedError
 
