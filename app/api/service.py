@@ -120,7 +120,12 @@ class AnalysisService:
         logging.info("Workflow worker started")
 
         # Start sink 
-        started = sink.start()
+        concurrent = data.get("concurrent",False)
+        if not concurrent:
+            started = sink.start()
+        else:
+            started = sink.start_concurrent()
+        
         if not started:
             return internal_err_resp()
         
@@ -132,10 +137,10 @@ class AnalysisService:
             return internal_err_resp()
 
         logging.info("Streamer worker started")    
-
         resp = message(True, "Anaysis has been started")
         return resp, 200
 
+   
     @staticmethod
     def get_status(analysis_id):
         if analysis_id in AnalysisService.ANALYSIS:

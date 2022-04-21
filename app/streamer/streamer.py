@@ -1,6 +1,7 @@
 import threading
 from app.io import source
 import time
+import logging
 
 class StreamerWorker:
     def __init__(self,workflowWorker,sink,sample_every):
@@ -17,7 +18,7 @@ class StreamerWorker:
         )
         b_thread.daemon = True
         b_thread.start()
-        
+        logging.info(f"Streaming thread started? {b_thread.is_alive()}")
         return b_thread.is_alive()
     
     def done_callback(self):
@@ -39,14 +40,17 @@ class FileStreamWorker(StreamerWorker):
         frame_num = 0
         total_frames = self._streamer.num_frames
         streamer = self._streamer
+        logging.info(f"Entering stream loop {frame_num}")
         while  frame_num < total_frames:
             hasFrame, frame = streamer.read()
             if not hasFrame:
                 break
+            logging.info(f"New frame fetched {count} {frame_num}")
             self._sink.sink(frame_num,frame,count)
             frame_num += self._sample_every
             streamer.seek(frame_num)
             count += 1
+        logging.info(f"Exiting stream loop {frame_num}")
         self._streamer.close()
         self.done_callback()
 
@@ -65,15 +69,19 @@ class WebStreamWorker(StreamerWorker):
         t_end = time.time() + self._length
         streamer = self._streamer
         c_time = time.time()
+        logging.info(f"Entering stream loop {c_time}")
         while  c_time < t_end:
+            logging.info(f"Reading new frame")
             hasFrame, frame = streamer.read()
+            logging.info(f"New frame read? {hasFrame} {count} {c_time}")
             if not hasFrame:
                 break
+            logging.info(f"New frame fetched {count} {c_time}")
             self._sink.sink(c_time,frame,count)
             count += 1
             time.sleep(self._sample_every)
             c_time = time.time()
-
+        logging.info(f"Exiting stream loop {c_time}")
         self.done_callback()
     
 

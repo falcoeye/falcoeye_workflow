@@ -4,6 +4,9 @@ import numpy as np
 import io
 from PIL import Image
 from datetime import datetime
+import asyncio
+import logging
+
 class ModelContainer:
     def __init__(self,server=None):
         self._server = server
@@ -13,7 +16,7 @@ class ModelContainer:
         self._server = server
     
     def start(self):
-        self._server = "http://0.0.0.0:8000/predict/"
+        self._server = "http://0.0.0.0:8000/predict"
         self._running = True
         return True
     
@@ -21,14 +24,27 @@ class ModelContainer:
         return self._running
 
     def send(self,frame,data):
-        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Packaging data")
+        logging.info("Packaging data")
         buf = io.BytesIO()
         Image.fromarray(frame).save(buf, format='PNG')
         buf.seek(0)
-        print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Sending package")
+        logging.info("Sending package")
         response = requests.post(f"{self._server}",params=data,files=[('frame', buf)]).text.replace("\"","")
 
         return response
+    
+    async def send_async(self,session,frame,data):
+        logging.info("Packaging data")
+        buf = io.BytesIO()
+        Image.fromarray(frame).save(buf, format='PNG')
+        buf.seek(0)
+        logging.info("Sending package")
+        logging.info(data)
+        async with session.post(self._server,params=data,data={'frame': buf}) as response:
+            respath = await response.text()
+            respath = respath.replace("\"","")         
+            logging.info(respath)
+        return respath
 
 class ModelHandler:
     _handlers = {}
@@ -54,6 +70,10 @@ class ModelHandler:
     
     def predict(self,frame,data):
         response = self._container.send(frame,data)
+        return response
+    
+    async def predict_async(self,session,frame,data):
+        response = await self._container.send_async(session,frame,data)
         return response
 
     @staticmethod

@@ -4,8 +4,11 @@ import socket
 from queue import Queue
 import threading
 from datetime import datetime
-
-
+import asyncio
+import aiohttp
+import logging
+import io
+from PIL import Image
 class Sink:
     def __init__(self):
         pass
@@ -71,14 +74,72 @@ class AISink(Sink):
         b_thread.daemon = True
         b_thread.start()
         return b_thread.is_alive()
+
+    def start_concurrent(self):
+        logging.info("Starting concurrent task")
+        self._still = True
+        self._loop = asyncio.new_event_loop()        
+        
+        b_thread = threading.Thread(
+                target=self.start_background_loop,
+                args=(self._loop,),
+                daemon=True
+        )
+        b_thread.start()
+
+        logging.info(f"Sinking thread started? {b_thread.is_alive()}")
+        task = asyncio.run_coroutine_threadsafe(self.start_concurrent_(), self._loop)
+        return b_thread.is_alive()
+    
+    def start_background_loop(self,loop: asyncio.AbstractEventLoop) -> None:
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    async def predict_async(self,session,frame,data):
+        logging.info(data)
+        logging.info("Packaging data")
+        try:
+            buf = io.BytesIO()
+            img = Image.fromarray(frame)
+            img.save(buf, format='PNG')
+            buf.seek(0)
+            logging.info("Sending package")
+            async with session.post(f"http://0.0.0.0:8000/predict/",params=data,data={'frame': buf}) as response:
+                logging.info("waiting for response")
+                respath = await response.text()
+                respath = respath.replace("\"","")         
+                logging.info(respath)
+                self._wf_handler.put(respath)
+            img.close()
+        except Exception as e:
+            print(e)
+
+        # results_path =  await self._modelHandler.predict_async(session,frame,data)
+        # print(results_path)
+        # logging.info("Results received")
+        
+    async def start_concurrent_(self):
+        tasks = []
+        logging.info("Entering sinking loop")
+        async with aiohttp.ClientSession() as session:
+            while self._still or self.more():
+                if self.more():
+                    logging.info("New data to sink")
+                    frame,data = self._queue.get()
+                    task = asyncio.create_task(self.predict_async(session,frame,data))
+                    tasks.append(task)
+            logging.info("Exiting sinking loop")
+            await asyncio.gather(*tasks)
+        self._wf_handler.done_sinking()
+        self._loop.stop()
   
     def start_(self):
         while self._still or self.more():
             if self.more():
-                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"New data to sink")
+                logging.info("New data to sink")
                 frame,data = self._queue.get()
                 results_path =  self._modelHandler.predict(frame,data)
-                print(datetime.now().strftime("%d/%m/%Y %H:%M:%S"),"Results received")
+                logging.info("Results received")
                 self._wf_handler.put(results_path)
         self._wf_handler.done_sinking()
         
