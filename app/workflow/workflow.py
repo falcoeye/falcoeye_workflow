@@ -4,7 +4,6 @@ import threading
 from queue import Queue
 from app.io import csv as csv
 from app.io import video as video
-from app.io.storage import LocalStorageDataFetcher
 from app.ai.detection import FalcoeyeVideoDetection
 from app.utils import check_type
 from .calculation import *
@@ -148,7 +147,7 @@ class ObjectDetectionWorkflow(Workflow):
             o.run()
 
 class WorkflowHandler:
-    def __init__(self,analysis_id,workflow_structure,workflow_args):
+    def __init__(self,analysis_id,workflow_structure,workflow_args,prediction_fetcher):
         self._analysis_id = analysis_id
         self._w = ObjectDetectionWorkflow()
         self._w._args = workflow_structure["input_args"]
@@ -157,7 +156,7 @@ class WorkflowHandler:
         self._w.load_outputters(workflow_structure["outputters"])
         
         self._model = workflow_structure["model"]
-        self._datafetcher = LocalStorageDataFetcher()
+        self._prediction_fetcher = prediction_fetcher
         self._running = False
 
     def fill_args(self,data):
@@ -183,8 +182,8 @@ class WorkflowHandler:
         pass
 
 class LocalStreamingWorkFlowHandler(WorkflowHandler):
-    def __init__(self,analysis_id,workflow_structure,workflow_args):
-        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args)
+    def __init__(self,analysis_id,workflow_structure,workflow_args,prediction_fetcher):
+        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args,prediction_fetcher)
         self._still_streaming = False
         self._still_sinking = False
         self._queue = Queue()
@@ -198,7 +197,7 @@ class LocalStreamingWorkFlowHandler(WorkflowHandler):
 
     def fetch_results(self):
         resultsPath = self._queue.get()
-        frame,results = self._datafetcher.fetch(resultsPath)
+        frame,results = self._prediction_fetcher.fetch(resultsPath)
         return frame,results
 
     def start(self):
@@ -241,8 +240,8 @@ class LocalStreamingWorkFlowHandler(WorkflowHandler):
         self.done_()
 
 class RemoteStreamingWorkflowHandler(WorkflowHandler):
-    def __init__(self,analysis_id,workflow_structure,workflow_args,**args):
-        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args)
+    def __init__(self,analysis_id,workflow_structure,workflow_args,prediction_fetcher,**args):
+        WorkflowHandler.__init__(self,analysis_id,workflow_structure,workflow_args,prediction_fetcher)
         self._server = "http://0.0.0.0:8000"
         self._stream_extensions = {
             "file": "predict_file",
@@ -254,7 +253,7 @@ class RemoteStreamingWorkflowHandler(WorkflowHandler):
 
     def fetch_results(self,resultsPath):
         for rp in sorted(glob.glob(f"{resultsPath}/*")):
-            frame,results = self._datafetcher.fetch(rp)
+            frame,results = self._prediction_fetcher.fetch(rp)
             yield frame, results
     
     def start_calculator_(self):
@@ -281,16 +280,12 @@ class WorkflowFactory:
         pass
 
     @staticmethod
-    def create(analysis_id,workflow_structure,workflow_args,streaming,**args):
+    def create(analysis_id,workflow_structure,workflow_args,streaming,prediction_fetcher,**args):
         if streaming == "local":
-            w = LocalStreamingWorkFlowHandler(analysis_id,workflow_structure,workflow_args)
+            w = LocalStreamingWorkFlowHandler(analysis_id,workflow_structure,workflow_args,prediction_fetcher)
         elif streaming == "remote":
-            w = RemoteStreamingWorkflowHandler(analysis_id,workflow_structure,workflow_args,**args)
+            w = RemoteStreamingWorkflowHandler(analysis_id,workflow_structure,workflow_args,prediction_fetcher,**args)
         else:
             raise NotImplementedError
 
         return w
-        
-
-
-    

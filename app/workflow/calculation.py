@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw
+import logging
 
 class TimestampRecorder:
     def __init__(self, name):
@@ -146,7 +147,7 @@ class ObjectMonitor:
         minToTriggerOut = args.get("min_to_trigger_out", 5)
         objectName = args.get("object_name", None)
         if objectName is None:
-            print(f"You must provide object name for object_monitor calculation")
+            logging.error(f"You must provide object name for object_monitor calculation")
             exit()
         fr = ObjectMonitor(args["name"], objectName, minToTriggerIn, minToTriggerOut)
         return fr
@@ -173,7 +174,7 @@ class TypeCounter:
         if type(classes) == str:
             classes = [classes]
         elif not classes:
-            print("Cannot create type counter without providing classes names")
+            logging.error("Cannot create type counter without providing classes names")
             exit(0)
 
         tc = TypeCounter(args["name"], classes)
@@ -204,7 +205,7 @@ class TypeFilter:
         if type(classes) == str:
             classes = [classes]
         elif not classes:
-            print("Cannot create type counter without providing classes names")
+            logging.error("Cannot create type counter without providing classes names")
             exit(0)
 
         tc = TypeFilter(args["name"], classes)
@@ -299,7 +300,7 @@ class VisualizeDetectionOnFrames(CalculationsCalculation):
     def create(self, **args):
         calkeys = args.get("calculations", None)
         if calkeys is None:
-            print(
+            logging.error(
                 f"You must provide calculation ids for visualize_detection_on_frames calculation"
             )
             exit()
@@ -336,7 +337,7 @@ class VisualizeZoneOnFrames(CalculationsCalculation):
         width = args.get("width", None)
         height = args.get("height", None)
         if calkeys is None:
-            print(
+            logging.error(
                 f"You must provide calculation ids for visualize_detection_on_frames calculation"
             )
             exit()
@@ -369,7 +370,7 @@ class VisualizeZoneOnFrames(CalculationsCalculation):
 #         calkeys = args.get("calculations", None)
 #         template = args.get("template",None)
 #         if calkeys is None:
-#             print(f"You must provide calculation ids for detection_to_text calculation")
+#             logging.error(f"You must provide calculation ids for detection_to_text calculation")
 #             exit()
 #         c = DetectionToText(calkeys)
 #         return c
@@ -400,7 +401,7 @@ class DetectionOfFilter(CalculationsCalculation):
     def create(self, **args):
         calkeys = args.get("calculations", None)
         if calkeys is None:
-            print(
+            logging.error(
                 f"You must provide calculation ids for detection_of_filters calculation"
             )
             exit()
@@ -430,7 +431,7 @@ class AndFilters(CalculationsCalculation):
     def create(self, **args):
         calkeys = args.get("calculations", None)
         if calkeys is None:
-            print(f"You must provide calculation ids for and_filters calculation")
+            logging.error(f"You must provide calculation ids for and_filters calculation")
             exit()
         c = AndFilters(calkeys)
         return c
@@ -459,7 +460,7 @@ class CalculationsToDf(CalculationsCalculation):
     def create(self, **args):
         calkeys = args.get("calculations", None)
         if calkeys is None:
-            print(f"You must provide calculation ids for put_on_pd calculation")
+            logging.error(f"You must provide calculation ids for put_on_pd calculation")
             exit()
         c = CalculationsToDf(calkeys)
         return c

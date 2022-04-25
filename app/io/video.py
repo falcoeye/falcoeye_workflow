@@ -3,7 +3,7 @@ import os
 import cv2
 
 from .sink import VideoFileSink as VideoFileSink
-
+import logging
 
 class VideoWriter:
     def __init__(self, filename):
@@ -22,11 +22,11 @@ class VideoWriter:
     def create(cls, **args):
         filename = args.get("output_path", None)
         if filename is None:
-            print("csv outputer requires to pass output_path")
+            logging.error("csv outputer requires to pass output_path")
             exit(0)
         filedir = os.path.dirname(filename)
         if not os.path.exists(filedir):
-            print(f"The parent directory for {filename} doesn't exist")
+            logging.error(f"The parent directory for {filename} doesn't exist")
             exit(0)
         return VideoWriter(filename)
 
@@ -37,7 +37,7 @@ class MultiVideosWriter:
 
     def run(self, data):
         if len(data) == 0:
-            print("Warning: no data to write")
+            logging.warning("Warning: no data to write")
             return
         if type(data[0]) != list:
             data = [data]
@@ -55,10 +55,10 @@ class MultiVideosWriter:
     def create(cls, **args):
         prefix = args.get("output_prefix", None)
         if prefix is None:
-            print("csv outputer requires to pass output_prefix")
+            logging.error("csv outputer requires to pass output_prefix")
             exit(0)
         filedir = os.path.dirname(prefix)
         if not os.path.exists(filedir):
-            print(f"The parent directory for {prefix} doesn't exist")
+            logging.error(f"The parent directory for {prefix} doesn't exist")
             exit(0)
         return MultiVideosWriter(prefix)

@@ -4,15 +4,15 @@ from base64 import decodestring
 import numpy as np
 import os
 
-class DataFetcher:
+class PredictionFetcher:
     def __init__(self):
         pass
-    def fetch(self):
-        pass
+    def fetch(self,item):
+        return item[0],item[1]
 
-class LocalStorageDataFetcher(DataFetcher):
+class LocalStoragePredictionFetcher(PredictionFetcher):
     def __init__(self):
-        DataFetcher.__init__(self)
+        PredictionFetcher.__init__(self)
         self._replace = {
             "/predictions":"/Users/jalalirs/Documents/code/falcoeye/falcoeye_ai/predictions"
         }

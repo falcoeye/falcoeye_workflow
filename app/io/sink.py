@@ -43,7 +43,7 @@ class VideoFileSink(Sink):
     def close(self):
         self._writer.release()
 
-class AISink(Sink):
+class FalcoeyeAISink(Sink):
     def __init__(self,analysis_id,modelHandler,wf_handler):
         self._analysis_id = analysis_id
         self._modelHandler = modelHandler
@@ -96,27 +96,8 @@ class AISink(Sink):
         loop.run_forever()
 
     async def predict_async(self,session,frame,data):
-        logging.info(data)
-        logging.info("Packaging data")
-        try:
-            buf = io.BytesIO()
-            img = Image.fromarray(frame)
-            img.save(buf, format='PNG')
-            buf.seek(0)
-            logging.info("Sending package")
-            async with session.post(f"http://0.0.0.0:8000/predict/",params=data,data={'frame': buf}) as response:
-                logging.info("waiting for response")
-                respath = await response.text()
-                respath = respath.replace("\"","")         
-                logging.info(respath)
-                self._wf_handler.put(respath)
-            img.close()
-        except Exception as e:
-            print(e)
-
-        # results_path =  await self._modelHandler.predict_async(session,frame,data)
-        # print(results_path)
-        # logging.info("Results received")
+        results_path =  await self._modelHandler.predict_async(session,frame,data)
+        logging.info("Results received")
         
     async def start_concurrent_(self):
         tasks = []
@@ -142,7 +123,31 @@ class AISink(Sink):
                 logging.info("Results received")
                 self._wf_handler.put(results_path)
         self._wf_handler.done_sinking()
-        
+
+class TFServingSink(FalcoeyeAISink):
+    def __init__(self,analysis_id,modelHandler,wf_handler):
+        FalcoeyeAISink.__init__(self,analysis_id,modelHandler,wf_handler)
+
+    async def predict_async(self,session,frame,data):
+        logging.info(data)
+        logging.info("Packaging data")
+        try:
+          response =  await self._modelHandler.predict_async(session,frame,data)
+          logging.info(response)
+          self._wf_handler.put((frame,response))
+        except Exception as e:
+            logging.error(e)
+
+    def start_(self):
+        while self._still or self.more():
+            if self.more():
+                logging.info("New data to sink")
+                frame,data = self._queue.get()
+                response =  self._modelHandler.predict(frame,data)
+                logging.info("Results received")
+                self._wf_handler.put((frame,response))
+        self._wf_handler.done_sinking()
+
 class ImageSink(Sink):
     def __init__(self, filename):
         Sink.__init__(self)

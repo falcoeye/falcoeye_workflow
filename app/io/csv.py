@@ -1,7 +1,6 @@
 import os
-
 import pandas as pd
-
+import logging
 
 class CSVWriter:
     def __init__(self, filename):
@@ -19,10 +18,10 @@ class CSVWriter:
     def create(cls, **args):
         filename = args.get("output_path", None)
         if filename is None:
-            print("csv outputer requires to pass output_path")
+            logging.error("csv outputer requires to pass output_path")
             exit(0)
         filedir = os.path.dirname(filename)
         if not os.path.exists(filedir):
-            print(f"The parent directory for {filename} doesn't exist")
+            logging.error(f"The parent directory for {filename} doesn't exist")
             exit(0)
         return CSVWriter(filename)

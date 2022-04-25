@@ -7,6 +7,7 @@ import cv2
 import numpy
 import requests
 import streamlink
+import logging
 
 from .sink import VideoFileSink
 
@@ -77,7 +78,7 @@ class StreamSource:
         try:
             streams = streamlink.streams(url)
         except streamlink.exceptions.NoPluginError:
-            print(f"Warning: NO STREAM AVAILABLE in {url}")
+            logging.warning(f"Warning: NO STREAM AVAILABLE in {url}")
             return None
 
         stream = streams[resolution]
@@ -139,7 +140,7 @@ class StreamSource:
             else:
                 count_frame += 1
                 continue
-        print("finished streaming")
+        logging.info("finished streaming")
         self.close()
 
     def read(self):
@@ -209,7 +210,7 @@ class YoutubeSource(StreamSource):
 
     def open(self):
         # fetching is client responsiblity
-        print(f"Creating pipe with {self.url}, {self.resolution}")
+        logging.info(f"Creating pipe with {self.url}, {self.resolution}")
         self.pipe = YoutubeSource.create_stream_pipe(self.url, self.resolution)
 
     def read(self):

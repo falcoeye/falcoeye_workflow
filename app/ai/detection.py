@@ -32,7 +32,6 @@ class FalcoeyeDetection:
 class FalcoeyeVideoDetection(FalcoeyeDetection):
     def __init__(self, detections, category_map, frame_number, relative_time):
         FalcoeyeDetection.__init__(self, detections, category_map)
-        print(detections, category_map, frame_number, relative_time)
         self._frame_number = frame_number
         self._relative_time = relative_time
 

@@ -1,1 +1,1 @@
-from .model import ModelHandler
+from .model import create_model_handler

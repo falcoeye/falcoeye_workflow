@@ -1,13 +1,14 @@
 {
     
     "KAUST Fish Finder":{
-        "name": "KAUST Fish Finder",
+        "name": "kaust_fish_finder",
         "task": "detection",
         "framework": "tensorflow",
         "base_arch": "frcnn",
         "size": "1024",
-        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/kaust_tf_frcnn_1024x1024/prod/",
-        "deployment_type": "checkpoint"
+        "deployment_path": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_ai/models/findfish/",
+        "deployment_type": "frozen",
+        "version": 1
     },
     "Vehicles Counter":{
         "name": "Vehicles Counter",

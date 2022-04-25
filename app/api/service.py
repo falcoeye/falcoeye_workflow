@@ -3,9 +3,10 @@ from flask import current_app
 
 from app.utils import err_resp, internal_err_resp, message
 from app.streamer import WebStreamWorker,FileStreamWorker
-from app.io.sink import AISink
+from app.io.sink import FalcoeyeAISink,TFServingSink
+from app.io.prediction import LocalStoragePredictionFetcher,PredictionFetcher
 from app.workflow.workflow import WorkflowFactory,LocalStreamingWorkFlowHandler,RemoteStreamingWorkflowHandler
-from app.ai import ModelHandler
+from app.ai import create_model_handler
 import logging
 
 class AnalysisService:
@@ -33,12 +34,18 @@ class AnalysisService:
         analysis_id = data["analysis"]["id"]
         
         # Initializing model first
-        modelHandler = ModelHandler.init(model)
+        modelHandler = create_model_handler(model)
         if not modelHandler:
             return internal_err_resp()
 
+         # Creating prediction fetcher
+        prediction_fetcher_type = data.get("prediction_fetcher","local_storage")
+        if prediction_fetcher_type == "local_storage":
+            prediction_fetcher = LocalStoragePredictionFetcher()
+        elif prediction_fetcher_type == "tfserving":
+            prediction_fetcher = PredictionFetcher()
         # Creating workflow handler
-        workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"remote",**stream)
+        workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"remote",prediction_fetcher,**stream)
 
         logging.info("Workflow created")
 
@@ -76,13 +83,21 @@ class AnalysisService:
         # analysis info
         analysis_id = data["analysis"]["id"]
         
+        model_server = data.get("model_server","falcoeye")
         # Initializing model first
-        modelHandler = ModelHandler.init(model)
+        modelHandler = create_model_handler(model,model_server)
         if not modelHandler:
             return internal_err_resp()
 
+        # Creating prediction fetcher
+        prediction_fetcher_type = data.get("prediction_fetcher","local_storage")
+        if prediction_fetcher_type == "local_storage":
+            prediction_fetcher = LocalStoragePredictionFetcher()
+        elif prediction_fetcher_type == "simple":
+            prediction_fetcher = PredictionFetcher()
+
         # Creating workflow handler
-        workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"local")
+        workflowWorker = WorkflowFactory.create(analysis_id,workflow_structure,workflow_args,"local",prediction_fetcher)
 
         logging.info("Workflow created")
 
@@ -91,7 +106,10 @@ class AnalysisService:
             AnalysisService.ANALYSIS[analysis_id] = workflowWorker
 
         # Creating AI sink to stream frames into
-        sink = AISink(analysis_id,modelHandler,workflowWorker)
+        if model_server == "falcoeye":
+            sink = FalcoeyeAISink(analysis_id,modelHandler,workflowWorker)
+        elif model_server == "tfserving":
+            sink = TFServingSink(analysis_id,modelHandler,workflowWorker)
 
         logging.info("Sink created")
 
@@ -140,7 +158,6 @@ class AnalysisService:
         resp = message(True, "Anaysis has been started")
         return resp, 200
 
-   
     @staticmethod
     def get_status(analysis_id):
         if analysis_id in AnalysisService.ANALYSIS:
