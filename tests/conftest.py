@@ -20,55 +20,12 @@ def client(app):
             yield client
 
 @pytest.fixture
-def fishfinderw():
+def fishfinder():
     # TODO: Should come from backend
     with open("./tests/workflows.json") as f:
         return json.load(f)["KAUST Fish Counter"]
 
-@pytest.fixture
-def fishfinderm():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["KAUST Fish Finder"]
-
-
-@pytest.fixture
-def fourtythreefishw():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fourtythree Fish"]
-
-@pytest.fixture
-def fourtythreefishm():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["FourtyThree Fish SSD"]
-
-@pytest.fixture
-def veheyew():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["Vehicles Counter"]
-
-@pytest.fixture
-def veheyem():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["Vehicles Counter"]
-
-@pytest.fixture
-def humanw():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["Human Counter"]
-
-@pytest.fixture
-def humanm():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["Human Counter"]
-
-
+"""
 @pytest.fixture
 def harbour():
     return {
@@ -93,35 +50,4 @@ def ezviz():
         "length": 60
     }
 
-
-@pytest.fixture
-def arabian_angelfish():
-    return {
-        "type": "file",
-        "path": f"{DIR}/media/arabian_angelfish.mov",
-        "sample_every" :1
-    }
-
-@pytest.fixture
-def arabian_angelfish_short():
-    return {
-        "type": "file",
-        "path": f"{DIR}/media/arabian_angelfish_short.mov",
-        "sample_every" :1
-    }
-
-@pytest.fixture
-def lutjanis():
-    return {
-        "type": "file",
-        "path": "./tests/media/lutjanis.mov",
-        "sample_every" :30
-    }
-
-@pytest.fixture
-def vehicles():
-    return {
-        "type": "file",
-        "path": "./tests/media/cam_04.mp4",
-        "sample_every" :30
-    }
+"""
