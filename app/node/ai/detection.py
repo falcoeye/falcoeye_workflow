@@ -138,7 +138,7 @@ class TFObjectDetectionModel(Node):
     def run(self):
         logging.info(f"Starting tfserving container")
         self._container = start_tfserving_container(self._model_name,self._version)
-        logging.info(f"Container started. Prediction path: {self._container._server}")
+        logging.info(f"Container started. Prediction path: {self._container._predict_url}")
         while self.more():
             item = self.get()
             init_time, frame_count, frame = item 

@@ -60,7 +60,7 @@
             {
                 "name": "arabian_angel_model",
                 "type": "TFObjectDetectionModel",
-                "model_name": "arabian_angelfish",
+                "model_name": "arabianangelfish",
                 "version": 1
             },
             {
