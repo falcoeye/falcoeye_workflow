@@ -48,3 +48,37 @@ def test_file_analysis(client,fishfinder):
         time.sleep(3)
         status = check_status(client,"test_video")
         logging.info(status)
+
+
+def test_cut_video_segment_analysis(client,arabian_angelfish):
+
+    data = {
+        "analysis": {
+            "id": "test_arabian_angelfish",
+            "args": {
+                "source_filename": "./tests/media/arabian_angelfish_short.mov",
+                "source_sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish"
+            }
+        },
+        "workflow": arabian_angelfish   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status = check_status(client,"test_arabian_angelfish")
+    logging.info(status)
+    while status["workflow_busy"]:
+        time.sleep(3)
+        status = check_status(client,"test_arabian_angelfish")
+        logging.info(status)

@@ -6,6 +6,7 @@ import logging
 import numpy as np
 from .utils import get_color_from_number
 from PIL import Image
+import cv2
 class FalcoeyeDetection:
     def __init__(self,frame,detections, category_map,frame_number, relative_time):
         self._frame = frame
@@ -13,14 +14,46 @@ class FalcoeyeDetection:
         self._category_map = category_map
         self._frame_number = frame_number
         self._relative_time = relative_time
+        self._frame_bgr = cv2.cvtColor(self._frame, cv2.COLOR_RGB2BGR)
+        self._boxes = [d["box"] for d in self._detections]
+        self._classes = [d["class"] for d in self._detections]
+    
+    @property
+    def size(self):
+        return self._frame.shape
+    
+    @property
+    def frame(self):
+        return self._frame
+
+    @property
+    def frame_bgr(self):
+        return self._frame_bgr
+    
+    @property
+    def count(self):
+        return len(self._detections)
+    
+    @property
+    def boxes(self):
+        return self._boxes
+
+    @property
+    def classes(self):
+        return self._classes
+
+    @property
+    def framestamp(self):
+        return self._frame_number
+    
+    @property
+    def timestamp(self):
+        return self._relative_time
 
     def count_of(self, category):
         if category in self._category_map:
             return len(self._category_map[category])
         return -1
-
-    def get_boxes(self):
-        return [d["box"] for d in self._detections]
 
     def get_class_instances(self, name):
         return [i for i, d in enumerate(self._detections) if d["class"] == name]
@@ -28,21 +61,9 @@ class FalcoeyeDetection:
     def get_class(self, i):
         return self._detections[i]["class"]
 
-    def get_classes(self):
-        return [d["class"] for d in self._detections]
-
-    def count(self):
-        return len(self._detections)
-
     def get_box(self, i):
         return self._detections[i]["box"]
 
-    def get_framestamp(self):
-        return self._frame_number
-
-    def get_timestamp(self):
-        return self._relative_time
-    
     def detele(self,index):
         item = self.detections.pop(index)
         self._category_map[item["class"]] -= 1
@@ -67,7 +88,6 @@ class FalcoeyeDetectionNode(Node):
         classes = np.array(detections["detection_classes"]).astype(int)
         scores = np.array(detections["detection_scores"])
 
-        print(classes)
         counter = 0
         for i in range(boxes.shape[0]):
             if self._max_boxes == len(_detections):
@@ -89,7 +109,6 @@ class FalcoeyeDetectionNode(Node):
                 )
                 _category_map[class_name].append(counter)
                 counter += 1
-        logging.info(_detections)
         return _detections, _category_map
 
     def run(self):

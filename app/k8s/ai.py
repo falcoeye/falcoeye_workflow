@@ -5,7 +5,7 @@ from app.k8s.utils import get_ip_address
 
 def start_tfserving_container(model_name,model_version):
     # TODO: start container if not started
-    ip = get_ip_address(model_name)
+    ip = "localhost"#get_ip_address(model_name)
     port = 8501
     server = f"http://{ip}:{port}/v{model_version}/models/{model_name}:predict"
 

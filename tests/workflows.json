@@ -17,7 +17,7 @@
             {
                 "name": "falcoeye_detection",
                 "type": "FalcoeyeDetectionNode",
-                "labelmap": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_ai/models/findfish/1/label_map.json",
+                "labelmap": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/1/label_map.json",
                 "min_score_thresh": "$min_score_thresh",
                 "max_boxes": "$max_boxes"
             },
@@ -45,6 +45,58 @@
             "falcoeye_detection",
             "class_counter",
             "csv_outputter"
+        ]
+    },
+    "Arabian AngelFish":{
+        "name": "Arabian AngelFish",
+        "nodes": [
+            {
+                "name": "fish_video",
+                "type": "VideoFileSource",
+                "filename": "$source_filename",
+                "sample_every": "$source_sample_every",
+                "length": 10
+            },
+            {
+                "name": "arabian_angel_model",
+                "type": "TFObjectDetectionModel",
+                "model_name": "arabian_angelfish",
+                "version": 1
+            },
+            {
+                "name": "falcoeye_detection",
+                "type": "FalcoeyeDetectionNode",
+                "labelmap": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/arabian_angelfish/1/label_map.json",
+                "min_score_thresh": "$min_score_thresh",
+                "max_boxes": "$max_boxes"
+            },
+            {
+                "name": "arabian_angelfish_monitor",
+                "type": "ClasstMonitor",
+                "object_name": "arabian_angelfish", 
+                "min_to_trigger_in": "$min_to_trigger_in", 
+                "min_to_trigger_out": "$min_to_trigger_out"
+            },
+            {
+                "name": "video_writer",
+                "type": "VideoWriter",
+                "prefix": "$prefix"
+            }
+            
+        ],
+        "edges": [
+            [ "fish_video","arabian_angel_model"],
+            [ "arabian_angel_model","falcoeye_detection"],
+            [ "falcoeye_detection","arabian_angelfish_monitor"],
+            [ "arabian_angelfish_monitor","video_writer"]
+        ],
+        "starters":["fish_video"],
+        "run_order": [
+            "fish_video",
+            "arabian_angel_model",
+            "falcoeye_detection",
+            "arabian_angelfish_monitor",
+            "video_writer"
         ]
     }
 }

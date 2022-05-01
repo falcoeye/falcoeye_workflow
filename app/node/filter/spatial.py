@@ -19,7 +19,7 @@ class ZoneFilter(Node):
         # expecting items of type FalcoeyeDetction
         while self.more():
             item = self.get()
-            n = item.count()
+            n = item.count
             c = lambda x, y: self._mask[y, x]
             for i in range(n):
                 ymin, xmin, ymax, xmax = item.get_box(i)
