@@ -116,3 +116,36 @@ def test_threaded_file_analysis(client,t_fishfinder):
         time.sleep(3)
         status,busy = check_status(client,"test_video_threaded")
         logging.info(status)
+
+def test_async_threaded_file_analysis(client,ta_fishfinder):
+
+    data = {
+        "analysis": {
+            "id": "test_video_threaded_async",
+            "args": {
+                "source_filename": "./tests/media/lutjanis.mov",
+                "source_sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "output_filename": "./tests/analysis/test_video_threaded_async/findfish.csv",
+                "frequency": 3
+            }
+        },
+        "workflow": ta_fishfinder   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_video_threaded_async")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_video_threaded_async")
+        logging.info(status)
+

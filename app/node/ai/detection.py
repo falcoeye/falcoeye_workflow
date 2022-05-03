@@ -72,6 +72,7 @@ class FalcoeyeDetection:
         Image.fromarray(self._frame).save(f"{path}/{self._frame_number}.png")
 
 class FalcoeyeDetectionNode(Node):
+    
     def __init__(self, name, labelmap,min_score_thresh,max_boxes):
         Node.__init__(self,name)
         self._min_score_thresh = min_score_thresh
@@ -126,6 +127,7 @@ class FalcoeyeDetectionNode(Node):
     
 
 class TFObjectDetectionModel(Node):
+    
     def __init__(self, name,
         model_name,
         version
@@ -160,6 +162,15 @@ class TFObjectDetectionModel(Node):
             self.sink([init_time,frame_count,frame,raw_detections])
         
         logging.info(f"{self._name} completed")
+
+    async def run_on_async(self,session,item):
+        if not self.check_container():
+            return
+        init_time, frame_count, frame = item 
+        logging.info(f"New frame to post to container {init_time} {frame_count}")
+        raw_detections =  await self._container.post_async(session,frame)
+        logging.info(f"Prediction received {frame_count}")
+        return [init_time,frame_count,frame,raw_detections]
     
     def run_on(self,item):
         if not self.check_container():

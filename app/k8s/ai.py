@@ -2,7 +2,7 @@ import json
 import requests
 from falcoeye_kubernetes import FalcoServingKube
 from flask import current_app
-
+import logging
 def start_tfserving_container(model_name, model_version):
     kube = FalcoServingKube(model_name)
     if kube.start():
@@ -39,13 +39,16 @@ class TensorflowServingContainer:
 
     async def post_async(self,session,frame):
         try:
-            # TODO: what if kube is not running?
+            # TODO: what if kube is not running?     
             data = json.dumps({"signature_name": "serving_default", "instances": [frame.tolist()]})
             headers = {"content-type": "application/json"}
+            logging.info(f"Posting new frame asynchronously {self._predict_url}")
             async with session.post(self._predict_url,data=data,headers=headers) as response:
                 logging.info("waiting for response")
                 responseText = await response.text()
                 predictions = json.loads(responseText)['predictions'][0]
+                logging.info("Prediction received")
                 return predictions
         except Exception as e:
+            raise
             logging.error(e)

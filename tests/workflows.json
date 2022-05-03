@@ -159,5 +159,67 @@
             "findfish_model_thread",
             "fish_video"
         ]
+    },
+    "KAUST Fish Counter Threaded Async":{
+        "name": "KAUST Fish Counter Threaded Async",
+        "nodes": [
+            {
+                "name": "fish_video",
+                "type": "VideoFileSource",
+                "filename": "$source_filename",
+                "sample_every": "$source_sample_every"
+            },
+            {
+                "name": "findfish_model",
+                "type": "TFObjectDetectionModel",
+                "model_name": "findfish",
+                "version": 1
+            },
+            {
+                "name": "findfish_model_thread",
+                "type": "ConcurrentPostTasksThreadWrapper",
+                "node": "findfish_model",
+                "tcplimit": 2
+            },
+            {
+                "name": "falcoeye_detection",
+                "type": "FalcoeyeDetectionNode",
+                "labelmap": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/findfish/1/label_map.json",
+                "min_score_thresh": "$min_score_thresh",
+                "max_boxes": "$max_boxes"
+            },
+            {
+                "name": "class_counter",
+                "type": "ClassCounter",
+                "keys": ["fish"]
+            },
+            {
+                "name": "csv_outputter",
+                "type": "CSVWriter",
+                "filename": "$output_filename"
+            },
+            {
+                "name": "sequence_runner",
+                "type": "SequenceRunner",
+                "frequency": "$frequency",
+                "nodes": [
+                    "falcoeye_detection",
+                    "class_counter",
+                    "csv_outputter"
+                ]
+            }
+        ],
+        "edges": [
+            ["fish_video","findfish_model_thread"],
+            ["falcoeye_detection","class_counter"],
+            ["class_counter","csv_outputter"],
+            ["findfish_model_thread","sequence_runner"]
+        ],
+        "starters":["fish_video"],
+        "run_order": [
+            "sequence_runner",
+            "findfish_model_thread",
+            "fish_video"
+        ]
     }
 }
