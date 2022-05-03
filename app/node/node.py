@@ -1,11 +1,22 @@
 from queue import Queue
+import logging
 class Node:
     def __init__(self,name):
         self._name = name
         self._sinks = []
         self._data = Queue()
         self._thread = None
+        self._done_callback = None
+        self._continue = False
     
+    def close_sinks(self):
+        for sink in self._sinks:
+            sink.close()
+
+    @property
+    def name(self):
+        return self._name
+
     def add_sink(self,sink):
         self._sinks.append(sink)
     
@@ -18,6 +29,10 @@ class Node:
     def sink(self,data):
         for sink in self._sinks:
             sink._data.put(data)
+    
+    def close(self):
+        logging.info(f"Closing {self.name}")
+        self._continue = False
     
     def more(self):
         return self._data.qsize() > 0

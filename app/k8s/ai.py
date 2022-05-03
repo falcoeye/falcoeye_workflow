@@ -19,10 +19,10 @@ class TensorflowServingContainer:
         self._version = model_version
         self._running = True
         self._kube = kube
-        if current_app.config.get("TESTING"):
-            self._server_address = self._kube.get_service_address(external=True,hostname=True)
-        else:
-            self._server_address = self._kube.get_service_address()
+        #if current_app.config.get("TESTING"):
+        self._server_address = self._kube.get_service_address(external=True,hostname=True)
+        #else:
+        #    self._server_address = self._kube.get_service_address()
         
         self._predict_url = f"http://{self._server_address}/v{model_version}/models/{model_name}:predict"
       

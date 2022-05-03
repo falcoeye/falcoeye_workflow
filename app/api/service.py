@@ -15,7 +15,7 @@ class AnalysisService:
         
         # Creating workflow handler
         workflow = WorkflowFactory.create_from_dict(workflow_struct,analysis)
-        workflow.run_sequentially()
+        workflow.run_sequentially_async()
         
         # Keep reference to check on status without going to backend
         if current_app.config.get("TESTING"):
@@ -28,9 +28,7 @@ class AnalysisService:
     def get_status(analysis_id):
         if analysis_id in AnalysisService.ANALYSIS:
             workflow = AnalysisService.ANALYSIS[analysis_id]
-            response = {
-                    "workflow_busy": workflow._busy
-            }  
+            response = workflow.status()
             return response,200
         else:
             return err_resp("Analysis not found!", "analysis_404", 404)

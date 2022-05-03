@@ -10,13 +10,16 @@ class ClassCounter(Node):
 
     def run(self):
         table = []
+        logging.info(f"Running {self.name} for {self._keys}")
         while self.more():
+            logging.info(f"New item for {self.name}")
             item = self.get()
             row = [item.timestamp,item.framestamp]
             for k in self._keys:
                 row.append(item.count_of(k))
             table.append(row)
         df = pd.DataFrame(table,columns=["Timestamp","Frame_Order"]+self._keys)
+        logging.info(f"\n{df}")
         self.sink(df)
 
 

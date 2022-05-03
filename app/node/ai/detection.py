@@ -112,9 +112,11 @@ class FalcoeyeDetectionNode(Node):
         return _detections, _category_map
 
     def run(self):
+        logging.info(f"Running falcoeye detection")
         while self.more():
             item = self.get()
             init_time, frame_count, frame,raw_detections = item 
+            logging.info(f"New frame for falcoeye detection {init_time} {frame_count}")
             detections, category_map = self.translate(raw_detections)
             fe_detection = FalcoeyeDetection(frame,detections, 
                     category_map, 
@@ -122,8 +124,6 @@ class FalcoeyeDetectionNode(Node):
                     init_time)
             self.sink(fe_detection)
     
-    def run_async(self):
-        pass
 
 class TFObjectDetectionModel(Node):
     def __init__(self, name,
@@ -134,11 +134,23 @@ class TFObjectDetectionModel(Node):
         self._model_name = model_name
         self._version = version
         self._container = None
-        
-    def run(self):
+
+    def check_container(self):
         logging.info(f"Starting tfserving container")
-        self._container = start_tfserving_container(self._model_name,self._version)
+        if not self._container:
+            self._container = start_tfserving_container(self._model_name,self._version)
+            if not self._container:
+                logging.error("Couldn't start container")
+                return False
+        
         logging.info(f"Container started. Prediction path: {self._container._predict_url}")
+        return True
+
+    def run(self):
+        if not self.check_container():
+            return
+        
+        logging.info(f'Predicting {self._data.qsize()} frames')
         while self.more():
             item = self.get()
             init_time, frame_count, frame = item 
@@ -149,7 +161,16 @@ class TFObjectDetectionModel(Node):
         
         logging.info(f"{self._name} completed")
     
-    def run_async(self):
-        pass
+    def run_on(self,item):
+        if not self.check_container():
+            return
+        init_time, frame_count, frame = item 
+        logging.info(f"New frame to post to container {init_time} {frame_count}")
+        raw_detections =  self._container.post(frame)
+        logging.info(f"Prediction received {frame_count}")
+        return [init_time,frame_count,frame,raw_detections]
+    
+    
+
 
     

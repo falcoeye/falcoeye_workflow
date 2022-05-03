@@ -16,7 +16,10 @@ def check_status(client,analysis_id):
     resp = client.get(f"/api/analysis/status/{analysis_id}")
     assert resp.status_code == 200
     status = resp.json
-    return status
+    busy = False
+    for v in status.values():
+        busy = busy or v
+    return status,busy
 
 def test_file_analysis(client,fishfinder):
 
@@ -49,7 +52,6 @@ def test_file_analysis(client,fishfinder):
         status = check_status(client,"test_video")
         logging.info(status)
 
-
 def test_cut_video_segment_analysis(client,arabian_angelfish):
 
     data = {
@@ -81,4 +83,36 @@ def test_cut_video_segment_analysis(client,arabian_angelfish):
     while status["workflow_busy"]:
         time.sleep(3)
         status = check_status(client,"test_arabian_angelfish")
+        logging.info(status)
+
+def test_threaded_file_analysis(client,t_fishfinder):
+
+    data = {
+        "analysis": {
+            "id": "test_video_threaded",
+            "args": {
+                "source_filename": "./tests/media/lutjanis.mov",
+                "source_sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "output_filename": "./tests/analysis/test_video_threaded/findfish.csv",
+                "frequency": 3
+            }
+        },
+        "workflow": t_fishfinder   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_video_threaded")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_video_threaded")
         logging.info(status)

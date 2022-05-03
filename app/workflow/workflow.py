@@ -1,5 +1,5 @@
 from .utils import fill_args
-from app.node import create_node_from_dict
+from app.node import create_node_from_dict,Source
 import logging 
 import threading
 
@@ -10,6 +10,7 @@ class Workflow:
         self._starters = starters
         self._nodes_in_order = nodes_in_order
         self._busy = False
+        self._tasks = {}
     
     def run_sequentially(self):
         logging.info(f"Running {self._analysis_id} sequentially")
@@ -21,12 +22,24 @@ class Workflow:
         self._busy = False
 
     def run_sequentially_async(self):
-        w_thread = threading.Thread(
-                target=self.run_sequentially,
-                args=(),
-                daemon= True
-            )    
-        w_thread.start()
+        logging.info(f"Running {self._analysis_id} asynchronously")
+        self._busy = True
+        self._tasks = {}
+        for n in self._nodes_in_order:
+            self._tasks[n.name] = True
+            logging.info(f"Running {n._name}")   
+            n.run_async(self.done_task_callback)
+
+        logging.info(f"{self._analysis_id} completed")
+
+    def done_task_callback(self,task):
+        # TODO: atomic
+        logging.info(f"Received done callback from {task}")
+        self._tasks[task] = False
+
+    def status(self):
+        return self._tasks
+
 
 class WorkflowFactory:
     def __init__(self):
@@ -34,14 +47,16 @@ class WorkflowFactory:
 
     @staticmethod
     def create_from_dict(workflow_structure,analysis):
-        
         name = workflow_structure["name"]
-        
         nodes_json = workflow_structure["nodes"]
         fill_args(nodes_json,analysis["args"])
         nodes = {}
         for n in nodes_json:
             logging.info(f"creating node {n}")
+            if "nodes" in n:
+                n["nodes"] = [nodes[i] for i in n["nodes"]]
+            elif "node" in n:
+                n["node"] = nodes[n["node"]]
             nodes[n["name"]] = create_node_from_dict(n)
         logging.info(nodes)
 

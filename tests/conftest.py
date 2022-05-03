@@ -26,6 +26,12 @@ def fishfinder():
         return json.load(f)["KAUST Fish Counter"]
 
 @pytest.fixture
+def t_fishfinder():
+    # TODO: Should come from backend
+    with open("./tests/workflows.json") as f:
+        return json.load(f)["KAUST Fish Counter Threaded"]
+
+@pytest.fixture
 def arabian_angelfish():
     # TODO: Should come from backend
     with open("./tests/workflows.json") as f:
