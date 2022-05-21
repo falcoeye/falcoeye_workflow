@@ -6,11 +6,11 @@ from .source import Source
 import logging
 
 class VideoFileSource(Source):
-    def __init__(self, name, filename,sample_every,length=-1):
+    def __init__(self, name, filename,sample_every,length=-1,**kwargs):
         Source.__init__(self,name)
         self._filename = filename
         self._sample_every = sample_every
-        self._num_frames = length
+        self._num_frames = int(length)
         self._frames_per_second = -1
         self._reader = None
         self.width = -1
@@ -50,7 +50,7 @@ class VideoFileSource(Source):
         self.close()
         self.close_sinks()
 
-    def run_async(self,done_callback):
+    def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
         self.open()
         self._thread = Thread(target=self.run, args=(),daemon=True)

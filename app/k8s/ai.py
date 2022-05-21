@@ -3,31 +3,37 @@ import requests
 from falcoeye_kubernetes import FalcoServingKube
 from flask import current_app
 import logging
+
+def get_service_address(kube):
+    logging.info("getting service address")
+    if current_app.config.get("TESTING"):
+        return kube.get_service_address(external=True,hostname=True)
+    else:
+        return kube.get_service_address()
+
 def start_tfserving_container(model_name, model_version):
     kube = FalcoServingKube(model_name)
-    if kube.start():
-        return TensorflowServingContainer(model_name,model_version,kube)
+    started = kube.start() and kube.is_running()
+    logging.info(f"kube started for {model_name}?: {started}")
+    if started:
+        service_address = get_service_address(kube)
+        logging.info(f"New container for {model_name} started")
+        return TensorflowServingContainer(model_name,model_version,service_address,kube)
     else:
+        logging.error(f"Couldn't start container for {model_name}")
         return None
 
 class TensorflowServingContainer:
     def __init__(self,
         model_name,
         model_version,
+        service_address,
         kube):
         self._name = model_name
         self._version = model_version
-        self._running = True
         self._kube = kube
-        #if current_app.config.get("TESTING"):
-        self._server_address = self._kube.get_service_address(external=True,hostname=True)
-        #else:
-        #    self._server_address = self._kube.get_service_address()
-        
-        self._predict_url = f"http://{self._server_address}/v{model_version}/models/{model_name}:predict"
-      
-    def is_running(self):
-        return self._running
+        self._predict_url = f"http://{service_address}/v{model_version}/models/{model_name}:predict"
+        logging.info(f"New tensorflow serving container initialized for {model_name} on {service_address}")
 
     def post(self,frame):
         # TODO: what if kube is not running?
@@ -44,10 +50,9 @@ class TensorflowServingContainer:
             headers = {"content-type": "application/json"}
             logging.info(f"Posting new frame asynchronously {self._predict_url}")
             async with session.post(self._predict_url,data=data,headers=headers) as response:
-                logging.info("waiting for response")
+                logging.info("Prediction received")
                 responseText = await response.text()
                 predictions = json.loads(responseText)['predictions'][0]
-                logging.info("Prediction received")
                 return predictions
         except Exception as e:
             raise

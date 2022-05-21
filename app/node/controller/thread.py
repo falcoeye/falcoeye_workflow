@@ -23,7 +23,7 @@ class ThreadWrapper(Node):
             self._done_callback(self._name)  
         self.close_sinks() 
 
-    def run_async(self,done_callback):
+    def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
         self._continue = True
         self._thread = Thread(target=self.run_forever_, args=(),daemon=True)
@@ -37,6 +37,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
         self._node = node
         self._loop = None
         self._tcplimit = tcplimit
+        self._ntasks = 4
 
     async def run_forever_(self):
         logging.info(f"Starting concurrent looping for {self.name}")        
@@ -49,9 +50,15 @@ class ConcurrentPostTasksThreadWrapper(Node):
                     item = self.get()
                     task = asyncio.create_task(self._node.run_on_async(session,item))
                     tasks.append(task)
+                if len(tasks) == self._ntasks:
+                    logging.info(f"Gathering {self._ntasks} new tasks")
+                    await asyncio.gather(*tasks)
+                    tasks = []
+            if len(tasks) > 0:
+                logging.info("Gathering remaining tasks")
+                await asyncio.gather(*tasks)
+                tasks = []
             logging.info("Exiting sinking loop")
-            await asyncio.gather(*tasks)
-            logging.info("Gathered all tasks")
         self._loop.stop()
         
         logging.info(f"Loop {self.name} inturrepted. Flushing queue")
@@ -63,7 +70,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
-    def run_async(self,done_callback):
+    def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
         self._continue = True
         self._loop = asyncio.new_event_loop()     

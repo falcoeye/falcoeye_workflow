@@ -52,7 +52,7 @@ class SequenceRunner(Node):
             self._done_callback(self._name)
         self.close_sinks()
     
-    def run_async(self,done_callback):
+    def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
         self._continue = True
         self._thread = Thread(target=self.run_forever_, args=(),daemon=True)

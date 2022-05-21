@@ -22,27 +22,21 @@ def client(app):
 @pytest.fixture
 def fishfinder():
     # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fish Counter"]
-
-@pytest.fixture
-def t_fishfinder():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fish Counter Threaded"]
+    with open("./workflows/kaust_fish_counter.json") as f:
+        return json.load(f)
 
 @pytest.fixture
 def ta_fishfinder():
     # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fish Counter Threaded Async"]
+    with open("./workflows/kaust_fish_counter_threaded_async.json") as f:
+        return json.load(f)
 
 
 @pytest.fixture
 def arabian_angelfish():
     # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["Arabian AngelFish"]
+    with open("./workflows/arabian_angelfish.json") as f:
+        return json.load(f)
 
 """
 @pytest.fixture
@@ -60,7 +54,7 @@ def harbour():
 def ezviz():
     return {
         "type": "stream",
-        "ipv4": "139.64.63.135",
+        "host": "139.64.63.135",
         "port": "554",
         "username": "admin",
         "password": "MWJUES",

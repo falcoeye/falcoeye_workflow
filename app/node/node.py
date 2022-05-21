@@ -23,7 +23,7 @@ class Node:
     def run(self):
         raise NotImplementedError
     
-    def run_async(self):
+    def run_async(self,done_callback,error_callback):
         raise NotImplementedError
     
     def sink(self,data):

@@ -3,7 +3,7 @@ from app.node.node import Node
 
 
 class Source(Node):
-    def __init__(self,name):
+    def __init__(self,name,**kwargs):
         Node.__init__(self,name)
 
     def open(self):
@@ -14,4 +14,5 @@ class Source(Node):
 
     def close(self):
         pass
+
 

@@ -26,9 +26,10 @@ def test_file_analysis(client,fishfinder):
     data = {
         "analysis": {
             "id": "test_video",
+            "async": False,
             "args": {
-                "source_filename": "./tests/media/lutjanis.mov",
-                "source_sample_every": 30,
+                "filename": "./tests/media/lutjanis.mov",
+                "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
                 "output_filename": "./tests/analysis/test_video/findfish.csv"
@@ -45,11 +46,11 @@ def test_file_analysis(client,fishfinder):
     logging.info(resp.json)
     assert resp.status_code == 200   
 
-    status = check_status(client,"test_video")
+    status,busy = check_status(client,"test_video")
     logging.info(status)
-    while status["workflow_busy"]:
+    while busy:
         time.sleep(3)
-        status = check_status(client,"test_video")
+        status,busy = check_status(client,"test_video")
         logging.info(status)
 
 def test_cut_video_segment_analysis(client,arabian_angelfish):
@@ -57,14 +58,16 @@ def test_cut_video_segment_analysis(client,arabian_angelfish):
     data = {
         "analysis": {
             "id": "test_arabian_angelfish",
+            "async": True,
             "args": {
-                "source_filename": "./tests/media/arabian_angelfish_short.mov",
-                "source_sample_every": 1,
+                "filename": "./tests/media/arabian_angelfish_short.mov",
+                "sample_every": 1,
                 "min_score_thresh": 0.10,
                 "max_boxes": 30,
                 "min_to_trigger_in": 5,
                 "min_to_trigger_out": 5,
-                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish"
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish",
+                "length": 3
             }
         },
         "workflow": arabian_angelfish   
@@ -78,43 +81,11 @@ def test_cut_video_segment_analysis(client,arabian_angelfish):
     logging.info(resp.json)
     assert resp.status_code == 200   
 
-    status = check_status(client,"test_arabian_angelfish")
-    logging.info(status)
-    while status["workflow_busy"]:
-        time.sleep(3)
-        status = check_status(client,"test_arabian_angelfish")
-        logging.info(status)
-
-def test_threaded_file_analysis(client,t_fishfinder):
-
-    data = {
-        "analysis": {
-            "id": "test_video_threaded",
-            "args": {
-                "source_filename": "./tests/media/lutjanis.mov",
-                "source_sample_every": 30,
-                "min_score_thresh": 0.30,
-                "max_boxes": 30,
-                "output_filename": "./tests/analysis/test_video_threaded/findfish.csv",
-                "frequency": 3
-            }
-        },
-        "workflow": t_fishfinder   
-    }
-
-    resp = client.post(
-        "/api/analysis/",
-        data=json.dumps(data),
-        content_type="application/json",
-    )
-    logging.info(resp.json)
-    assert resp.status_code == 200   
-
-    status,busy = check_status(client,"test_video_threaded")
+    status,busy = check_status(client,"test_arabian_angelfish")
     logging.info(status)
     while busy:
         time.sleep(3)
-        status,busy = check_status(client,"test_video_threaded")
+        status,busy = check_status(client,"test_arabian_angelfish")
         logging.info(status)
 
 def test_async_threaded_file_analysis(client,ta_fishfinder):
@@ -123,8 +94,8 @@ def test_async_threaded_file_analysis(client,ta_fishfinder):
         "analysis": {
             "id": "test_video_threaded_async",
             "args": {
-                "source_filename": "./tests/media/lutjanis.mov",
-                "source_sample_every": 30,
+                "filename": "./tests/media/lutjanis.mov",
+                "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
                 "output_filename": "./tests/analysis/test_video_threaded_async/findfish.csv",

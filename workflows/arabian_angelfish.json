@@ -1,0 +1,162 @@
+{
+    "name": "Arabian AngelFish",
+    "args": [
+        {
+            "name": "filename",
+            "type": "string",
+            "disc": "filepath for video in case of streaming from video file",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "url",
+            "type": "string",
+            "disc": "url for camera in case of streaming server",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "host",
+            "type": "string",
+            "disc": "host for camera in case of rtsp camera",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "port",
+            "type": "string",
+            "disc": "port for camera in case of rtsp camera",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "username",
+            "type": "string",
+            "disc": "username for camera in case of rtsp camera",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "password",
+            "type": "string",
+            "disc": "password for camera in case of rtsp camera",
+            "source": "infered",
+            "default": null
+        },
+        {
+            "name": "sample_every",
+            "type": "int",
+            "disc": "Sample every (seconds for stream and frame for video)",
+            "source": "user",
+            "default": 30
+        },
+        {
+            "name": "min_score_thresh",
+            "type": "float",
+            "disc": "Minimum detection confidance ([0-1])",
+            "source": "user",
+            "default": 0.50
+        },
+        {
+            "name": "max_boxes",
+            "type": "int",
+            "disc": "Maximum number of detections ([0-100])",
+            "source": "user",
+            "default": 100
+        },
+        {
+            "name": "min_to_trigger_in",
+            "type": "int",
+            "disc": "Number of consecutive detections before start recording ([1-10])",
+            "source": "user",
+            "default": 5
+        },
+        {
+            "name": "min_to_trigger_out",
+            "type": "int",
+            "disc": "Number of consecutive miss-detections before stop recording ([1-10])",
+            "source": "user",
+            "default": 5
+        },
+        {
+            "name": "length",
+            "type": "float",
+            "disc": "Length of streaming (seconds, -1 for entire video)",
+            "source": "user",
+            "default": -1
+        },
+        {
+            "name": "prefix",
+            "type": "string",
+            "disc": "Folder path where to store results",
+            "source": "system"
+        }
+    ],
+    "nodes": [
+        {
+            "name": "stream_source",
+            "type": "DynamicSource",
+            "filename": "$filename",
+            "url": "$url",
+            "host": "$host",
+            "port": "$port",
+            "username": "$username",
+            "password": "$password",
+            "length": "$length",
+            "sample_every": "$sample_every"
+        },   
+        {
+            "name": "arabian_angel_model",
+            "type": "TFObjectDetectionModel",
+            "model_name": "arabianangelfish",
+            "version": 1
+        },
+        {
+            "name": "arabian_angel_model_thread",
+            "type": "ConcurrentPostTasksThreadWrapper",
+            "node": "arabian_angel_model",
+            "tcplimit": 8
+        },
+        {
+            "name": "falcoeye_detection",
+            "type": "FalcoeyeDetectionNode",
+            "labelmap": "/Users/jalalirs/Documents/code/falcoeye/falcoeye_backbones/portofolio/fish/arabian_angelfish/1/label_map.json",
+            "min_score_thresh": "$min_score_thresh",
+            "max_boxes": "$max_boxes"
+        },
+        {
+            "name": "arabian_angelfish_monitor",
+            "type": "ClasstMonitor",
+            "object_name": "arabian_angelfish", 
+            "min_to_trigger_in": "$min_to_trigger_in", 
+            "min_to_trigger_out": "$min_to_trigger_out"
+        },
+        {
+            "name": "video_writer",
+            "type": "VideoWriter",
+            "prefix": "$prefix"
+        },
+        {
+            "name": "sequence_runner",
+            "type": "SequenceRunner",
+            "frequency": "$frequency",
+            "nodes": [
+                "falcoeye_detection",
+                "arabian_angelfish_monitor",
+                "video_writer"
+            ]
+        }      
+    ],
+    "edges": [
+        [ "stream_source","arabian_angel_model_thread"],
+        [ "falcoeye_detection","arabian_angelfish_monitor"],
+        [ "arabian_angelfish_monitor","video_writer"],
+        ["arabian_angel_model_thread","sequence_runner"]
+    ],
+    "starters":["stream_source"],
+    "run_order": [
+        "sequence_runner",
+        "arabian_angel_model_thread",
+        "stream_source"
+    ]
+}

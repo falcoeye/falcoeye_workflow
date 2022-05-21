@@ -138,20 +138,21 @@ class TFObjectDetectionModel(Node):
         self._container = None
 
     def check_container(self):
-        logging.info(f"Starting tfserving container")
         if not self._container:
+            logging.info(f"Starting tfserving container")
             self._container = start_tfserving_container(self._model_name,self._version)
             if not self._container:
                 logging.error("Couldn't start container")
                 return False
-        
-        logging.info(f"Container started. Prediction path: {self._container._predict_url}")
+            logging.info(f"Container started. Prediction path: {self._container._predict_url}")
+
         return True
 
     def run(self):
+        # TODO: find better name, since this function might initialize the container internally
         if not self.check_container():
             return
-        
+             
         logging.info(f'Predicting {self._data.qsize()} frames')
         while self.more():
             item = self.get()

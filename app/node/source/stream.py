@@ -7,11 +7,12 @@ import numpy as np
 import requests
 import streamlink
 import logging
+import time
 
 from .source import Source
 
 class StreamingSource(Source):
-    def __init__(self, name, sample_every=5, length=30):
+    def __init__(self, name, sample_every=5, length=30,**kwargs):
         Source.__init__(self,name)
         self._running = False
         self._sample_every = sample_every
@@ -58,7 +59,7 @@ class StreamingSource(Source):
         self._thread.start()
 
 class StreamingServerSource(StreamingSource):
-    def __init__(self, name, url,  resolution="best", sample_every=5, length=30):
+    def __init__(self, name, url,  resolution="best", sample_every=5, length=30,**kwargs):
         Source.__init__(self,name,sample_every,length)
         self._url = url
         self._resolution = resolution
@@ -119,7 +120,7 @@ class StreamingServerSource(StreamingSource):
 class AngelCamSource(StreamingServerSource):
     resolutions = {"best": {"width": 1920, "height": 1080}}
 
-    def __init__(self, url,  resolution="best", sample_every=5, length=60):
+    def __init__(self, url,  resolution="best", sample_every=5, length=60,**kwargs):
         StreamingServerSource.__init__(self, name, url, resolution, sample_every, length)
         self._m3u8 = None
         self._width = AngelCamSource.resolutions[resolution]["width"]
@@ -141,7 +142,7 @@ class YoutubeSource(StreamingServerSource):
     }
 
     def __init__(
-        self, name,url, resolution="1080p", sample_every=5, length=30):
+        self, name,url, resolution="1080p", sample_every=5, length=30,**kwargs):
         StreamingServerSource.__init__(self, name, url, resolution, sample_every, length)
         self._width = YoutubeSource.resolutions[resolution]["width"]
         self._height = YoutubeSource.resolutions[resolution]["height"]
@@ -153,16 +154,16 @@ class YoutubeSource(StreamingServerSource):
         self._streamer = StreamingServerSource.create_stream_pipe(self._url, self._resolution)
     
 class RTSPSource(StreamingSource):
-    def __init__(self,name,ipv4,port=554,username=None,password=None,sample_every=5, length=60):
+    def __init__(self,name,host,port=554,username=None,password=None,sample_every=5, length=60,**kwargs):
         StreamingSource.__init__(self,name,sample_every,length)
-        self._ipv4 = ipv4
+        self._host = host
         self._port = port
         self._username = username
         self._password = password
         self._url = f"rtsp://"
         if username:
             self._url += f'{username}:{password}@'
-        self._url += f'{ipv4}:{port}/Streaming/Channels/1'
+        self._url += f'{host}:{port}/Streaming/Channels/1'
         self._running = False
 
     def open(self):
@@ -178,3 +179,4 @@ class RTSPSource(StreamingSource):
         if self._streamer:
             self._streamer.release()
         self._streamer = None
+ 

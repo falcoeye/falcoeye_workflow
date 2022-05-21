@@ -26,16 +26,24 @@ class Workflow:
         self._busy = True
         self._tasks = {}
         for n in self._nodes_in_order:
+            print(n.name)
             self._tasks[n.name] = True
             logging.info(f"Running {n._name}")   
-            n.run_async(self.done_task_callback)
+            n.run_async(self.done_task_callback,self.error_task_callback)
 
         logging.info(f"{self._analysis_id} completed")
 
     def done_task_callback(self,task):
-        # TODO: atomic
         logging.info(f"Received done callback from {task}")
         self._tasks[task] = False
+        if all(self._tasks.values()):
+            # TODO update db
+            pass
+    
+    def error_task_callback(self,task,error):
+
+        pass
+
 
     def status(self):
         return self._tasks
@@ -49,7 +57,9 @@ class WorkflowFactory:
     def create_from_dict(workflow_structure,analysis):
         name = workflow_structure["name"]
         nodes_json = workflow_structure["nodes"]
-        fill_args(nodes_json,analysis["args"])
+        workflow_args = {n["name"]: n for n in workflow_structure["args"]}
+        fill_args(nodes_json,workflow_args,analysis["args"])
+        print(nodes_json,analysis["args"])
         nodes = {}
         for n in nodes_json:
             logging.info(f"creating node {n}")

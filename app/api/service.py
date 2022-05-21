@@ -15,7 +15,11 @@ class AnalysisService:
         
         # Creating workflow handler
         workflow = WorkflowFactory.create_from_dict(workflow_struct,analysis)
-        workflow.run_sequentially_async()
+        async_run = analysis.get("async",True)
+        if async_run:
+            workflow.run_sequentially_async()
+        else:
+            workflow.run_sequentially()
         
         # Keep reference to check on status without going to backend
         if current_app.config.get("TESTING"):
