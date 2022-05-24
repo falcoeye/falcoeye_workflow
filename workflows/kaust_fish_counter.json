@@ -77,12 +77,6 @@
             "disc": "Output frequency (every n frame)",
             "source": "user",
             "default": 3
-        },
-        {
-            "name": "output_filename",
-            "type": "string",
-            "disc": "Filename path where to store results",
-            "source": "system"
         }
     ],       
     "nodes": [
@@ -119,7 +113,9 @@
         {
             "name": "csv_outputter",
             "type": "CSVWriter",
-            "filename": "$output_filename"
+            "xaxis": "Timestamp",
+            "yaxis": "fish",
+            "prefix": "$prefix"
         }
     ],
     "edges": [

@@ -91,6 +91,10 @@ class ClasstMonitor(Node):
                     self._trigger_count = 0
                     self._triggered_once = False
         
+        # TODO: Fix this
+        # This will not work with sequence runner when followed by video writer
+        # due to frequent execution. We need to execute this only if sequence runner 
+        # is closed
         # in case stream finished while object is still in
         if len(self._current_sequence) > 0:
             self.sink(self._current_sequence)

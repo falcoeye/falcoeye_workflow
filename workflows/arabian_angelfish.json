@@ -84,12 +84,6 @@
             "disc": "Length of streaming (seconds, -1 for entire video)",
             "source": "user",
             "default": -1
-        },
-        {
-            "name": "prefix",
-            "type": "string",
-            "disc": "Folder path where to store results",
-            "source": "system"
         }
     ],
     "nodes": [
@@ -148,9 +142,9 @@
         }      
     ],
     "edges": [
-        [ "stream_source","arabian_angel_model_thread"],
-        [ "falcoeye_detection","arabian_angelfish_monitor"],
-        [ "arabian_angelfish_monitor","video_writer"],
+        ["stream_source","arabian_angel_model_thread"],
+        ["falcoeye_detection","arabian_angelfish_monitor"],
+        ["arabian_angelfish_monitor","video_writer"],
         ["arabian_angel_model_thread","sequence_runner"]
     ],
     "starters":["stream_source"],

@@ -32,7 +32,7 @@ def test_file_analysis(client,fishfinder):
                 "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
-                "output_filename": "./tests/analysis/test_video/findfish.csv"
+                "prefix": "./tests/analysis/test_video/",
             }
         },
         "workflow": fishfinder   
@@ -67,7 +67,8 @@ def test_cut_video_segment_analysis(client,arabian_angelfish):
                 "min_to_trigger_in": 5,
                 "min_to_trigger_out": 5,
                 "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish",
-                "length": 3
+                "length": 3,
+                "frequency": 1
             }
         },
         "workflow": arabian_angelfish   
@@ -93,12 +94,13 @@ def test_async_threaded_file_analysis(client,ta_fishfinder):
     data = {
         "analysis": {
             "id": "test_video_threaded_async",
+            "async": True,
             "args": {
                 "filename": "./tests/media/lutjanis.mov",
                 "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
-                "output_filename": "./tests/analysis/test_video_threaded_async/findfish.csv",
+                "prefix": "./tests/analysis/test_video_threaded_async/",
                 "frequency": 3
             }
         },

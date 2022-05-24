@@ -25,7 +25,7 @@ class AnalysisService:
         if current_app.config.get("TESTING"):
             AnalysisService.ANALYSIS[analysis["id"]] = workflow
 
-        resp = message(True, "Anaysis has been started")
+        resp = message(True, "Analysis started")
         return resp, 200
 
     @staticmethod

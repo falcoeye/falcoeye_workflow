@@ -41,13 +41,15 @@ class SequenceRunner(Node):
             item = self.get()
             self.sink(item)
             self.run_()
-        logging.info(f"Sequence {self.name} inturrepted. Flushing queue")
+        logging.info(f"Sequence {self.name} inturrepted.")
         # flushing the remaining
         if self._counter != 0:
+            logging.info(f"Flushing queue for {self.name}. {self._counter} item not processed")
             # tricking the run_ function to force it to run
             self._counter = self._frequency - 1
             self.run_()
         logging.info(f"Sequence {self.name} loop exited")
+        self._counter = 0
         if self._done_callback:
             self._done_callback(self._name)
         self.close_sinks()

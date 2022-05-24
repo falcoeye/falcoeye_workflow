@@ -39,6 +39,10 @@ class ConcurrentPostTasksThreadWrapper(Node):
         self._tcplimit = tcplimit
         self._ntasks = 4
 
+    async def task_(self,session,item):
+        o = await self._node.run_on_async(session,item)
+        self.sink(o)
+
     async def run_forever_(self):
         logging.info(f"Starting concurrent looping for {self.name}")        
         tasks = []
@@ -48,7 +52,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
                 if self.more():
                     logging.info("New data to sink")
                     item = self.get()
-                    task = asyncio.create_task(self._node.run_on_async(session,item))
+                    task = asyncio.create_task(self.task_(session,item))
                     tasks.append(task)
                 if len(tasks) == self._ntasks:
                     logging.info(f"Gathering {self._ntasks} new tasks")

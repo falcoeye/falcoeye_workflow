@@ -44,7 +44,6 @@ class Workflow:
 
         pass
 
-
     def status(self):
         return self._tasks
 
@@ -54,12 +53,15 @@ class WorkflowFactory:
         pass
 
     @staticmethod
-    def create_from_dict(workflow_structure,analysis):
-        name = workflow_structure["name"]
+    def create_from_dict(workflow_structure,analysis):    
+        # Getting nodes dictionary
         nodes_json = workflow_structure["nodes"]
+        # Creating dict to escape for loop in fill args
         workflow_args = {n["name"]: n for n in workflow_structure["args"]}
+        # replace workflow placeholders with user inputs
         fill_args(nodes_json,workflow_args,analysis["args"])
-        print(nodes_json,analysis["args"])
+
+        # This is important for output nodes
         nodes = {}
         for n in nodes_json:
             logging.info(f"creating node {n}")
@@ -68,6 +70,7 @@ class WorkflowFactory:
             elif "node" in n:
                 n["node"] = nodes[n["node"]]
             nodes[n["name"]] = create_node_from_dict(n)
+        
         logging.info(nodes)
 
         edgelist = workflow_structure["edges"]

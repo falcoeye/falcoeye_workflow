@@ -7,7 +7,7 @@ from .controller import *
 
 
 
-def create_node_from_dict(node_dict):
+def create_node_from_dict(node_dict,**args):
     node_type = node_dict.pop("type")
     node_class = globals()[node_type]
     return node_class(**node_dict)
