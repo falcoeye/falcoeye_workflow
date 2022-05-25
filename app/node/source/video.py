@@ -21,8 +21,9 @@ class VideoFileSource(Source):
         self.width = int(self._reader.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self._reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self._frames_per_second = self._reader.get(cv2.CAP_PROP_FPS)
+        self._length = int(self._reader.get(cv2.CAP_PROP_FRAME_COUNT))
         if self._num_frames < 0:
-            self._num_frames = int(self._reader.get(cv2.CAP_PROP_FRAME_COUNT))
+            self._num_frames = self._length
 
     def seek(self,n):
         self._reader.set(cv2.CAP_PROP_POS_FRAMES,n)
@@ -34,15 +35,20 @@ class VideoFileSource(Source):
         logging.info(f"Start streaming from {self._filename}")
         while counter < self._num_frames:
             hasFrame, frame = self._reader.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             if not hasFrame:
                 break
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                  
             logging.info(f"Frame {counter}/{self._num_frames}")
             for sink in self._sinks:
                 self.sink((counter,count,frame))
             count += 1
             counter += self._sample_every
-            self.seek(self._sample_every)
+            if counter > self._length:
+                break
+            self.seek(counter)
+
         logging.info(f"Streaming completed")
         if self._done_callback:
             self._done_callback(self._name)

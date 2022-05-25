@@ -42,8 +42,10 @@ class ClasstMonitor(Node):
         
     def run(self):
         while self.more():
+            logging.info(f"New item for {self._name}")
             item = self.get()
             nobject = item.count_of(self._object_name)
+            logging.info(f"There are {nobject} of {self._object_name} in this frame")
             # Object is not yet in or not sufficiently in
             if self._status == 0:
                 # Object was in in previous frame but perhaps missed prediction for this frame
@@ -91,12 +93,11 @@ class ClasstMonitor(Node):
                     self._trigger_count = 0
                     self._triggered_once = False
         
-        # TODO: Fix this
-        # This will not work with sequence runner when followed by video writer
-        # due to frequent execution. We need to execute this only if sequence runner 
-        # is closed
-        # in case stream finished while object is still in
-        if len(self._current_sequence) > 0:
+        # if the node is opened by upstream node, then
+        # don't sink the current sequence yet
+        logging.info(f"Node open? {self._continue }. Current sequence length {len(self._current_sequence)}")
+        if not self._continue and len(self._current_sequence) > 0:
+            logging.info("Stream closed. Flushing current sequence")
             self.sink(self._current_sequence)
             self._current_sequence = []
           

@@ -21,7 +21,7 @@ class SequenceRunner(Node):
             self._counter = 0
 
     def run(self):
-        
+        self.open_nodes()
         while self.more():
             item = self.get()
             self.sink(item)
@@ -30,8 +30,16 @@ class SequenceRunner(Node):
             # tricking the run_ function to force it to run
             self._counter = self._frequency - 1
             self.run_()
+        self.close_nodes()
+        # run last time to flush. Some nodes have post close scenarios
+        logging.info("Flushing nodes after closing.")
+        for n in self._nodes:
+            logging.info(f"Runing node {n.name}")
+            n.run()  
             
     def run_forever_(self):
+        # opening the nodes (i.e. setting continue to True)
+        self.open_nodes()
         logging.info(f"Starting looping for {self.name}")
         while self._continue or self.more():
             if not self.more():
@@ -52,8 +60,24 @@ class SequenceRunner(Node):
         self._counter = 0
         if self._done_callback:
             self._done_callback(self._name)
-        self.close_sinks()
+        
+        # closing the nodes (i.e. setting continue to False)
+        self.close_nodes()
+        # TODO: refactor this
+        # run last time to flush. Some nodes have post close scenarios
+        logging.info("Flushing nodes after closing.")
+        for n in self._nodes:
+            logging.info(f"Runing node {n.name}")
+            n.run()  
     
+    def open_nodes(self):
+        for node in self._nodes:
+            node.open() 
+
+    def close_nodes(self):
+        for node in self._nodes:
+            node.close() 
+
     def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
         self._continue = True

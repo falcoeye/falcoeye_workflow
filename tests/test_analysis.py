@@ -53,42 +53,6 @@ def test_file_analysis(client,fishfinder):
         status,busy = check_status(client,"test_video")
         logging.info(status)
 
-def test_cut_video_segment_analysis(client,arabian_angelfish):
-
-    data = {
-        "analysis": {
-            "id": "test_arabian_angelfish",
-            "async": True,
-            "args": {
-                "filename": "./tests/media/arabian_angelfish_short.mov",
-                "sample_every": 1,
-                "min_score_thresh": 0.10,
-                "max_boxes": 30,
-                "min_to_trigger_in": 5,
-                "min_to_trigger_out": 5,
-                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish",
-                "length": 3,
-                "frequency": 1
-            }
-        },
-        "workflow": arabian_angelfish   
-    }
-
-    resp = client.post(
-        "/api/analysis/",
-        data=json.dumps(data),
-        content_type="application/json",
-    )
-    logging.info(resp.json)
-    assert resp.status_code == 200   
-
-    status,busy = check_status(client,"test_arabian_angelfish")
-    logging.info(status)
-    while busy:
-        time.sleep(3)
-        status,busy = check_status(client,"test_arabian_angelfish")
-        logging.info(status)
-
 def test_async_threaded_file_analysis(client,ta_fishfinder):
 
     data = {
@@ -120,5 +84,77 @@ def test_async_threaded_file_analysis(client,ta_fishfinder):
     while busy:
         time.sleep(3)
         status,busy = check_status(client,"test_video_threaded_async")
+        logging.info(status)
+
+def test_sequential_cut_video_segment_analysis(client,arabian_angelfish_sequential):
+
+    data = {
+        "analysis": {
+            "id": "test_arabian_angelfish_sequential",
+            "async": False,
+            "args": {
+                "filename": "./tests/media/arabian_angelfish_short.mov",
+                "sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish_sequential",
+                "length": -1,
+                "frequency": 1
+            }
+        },
+        "workflow": arabian_angelfish_sequential   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_arabian_angelfish_sequential")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_arabian_angelfish_sequential")
+        logging.info(status)
+
+def test_cut_video_segment_analysis(client,arabian_angelfish):
+
+    data = {
+        "analysis": {
+            "id": "test_arabian_angelfish",
+            "async": True,
+            "args": {
+                "filename": "./tests/media/arabian_angelfish_short.mov",
+                "sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish",
+                "length": -1,
+                "frequency": 1
+            }
+        },
+        "workflow": arabian_angelfish   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_arabian_angelfish")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_arabian_angelfish")
         logging.info(status)
 

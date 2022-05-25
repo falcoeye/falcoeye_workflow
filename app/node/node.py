@@ -12,7 +12,6 @@ class Node:
     def close_sinks(self):
         for sink in self._sinks:
             sink.close()
-
     @property
     def name(self):
         return self._name
@@ -30,6 +29,10 @@ class Node:
         for sink in self._sinks:
             sink._data.put(data)
     
+    def open(self):
+        logging.info(f"Opening {self.name}")
+        self._continue = True
+        
     def close(self):
         logging.info(f"Closing {self.name}")
         self._continue = False
