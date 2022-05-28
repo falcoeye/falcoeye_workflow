@@ -1,1 +1,1 @@
-from .workflow import WorkflowFactory
+from .workflow import *

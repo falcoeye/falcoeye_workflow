@@ -3,6 +3,9 @@ import pytest
 from app import create_app
 from app.workflow import WorkflowFactory
 import json 
+import os
+
+DIR = os.path.dirname(os.path.realpath(__file__))
 
 @pytest.fixture
 def app():
@@ -17,100 +20,26 @@ def client(app):
             yield client
 
 @pytest.fixture
-def fishfinderw():
+def fishfinder():
     # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fish Counter"]
+    with open("./workflows/kaust_fish_counter.json") as f:
+        return json.load(f)
 
 @pytest.fixture
-def fishfinderm():
+def ta_fishfinder():
     # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["KAUST Fish Finder"]
-
-
-@pytest.fixture
-def fourtythreefishw():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["KAUST Fourtythree Fish"]
-
-@pytest.fixture
-def fourtythreefishm():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["FourtyThree Fish SSD"]
-
-@pytest.fixture
-def veheyew():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["Vehicles Counter"]
-
-@pytest.fixture
-def veheyem():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["Vehicles Counter"]
-
-@pytest.fixture
-def humanw():
-    # TODO: Should come from backend
-    with open("./tests/workflows.json") as f:
-        return json.load(f)["Human Counter"]
-
-@pytest.fixture
-def humanm():
-    # TODO: Should come from backend
-    with open("./tests/models.json") as f:
-        return json.load(f)["Human Counter"]
-
-
-@pytest.fixture
-def harbour():
-    return {
-        "type": "stream",
-        "url": "https://www.youtube.com/watch?v=NwWgOilQuzw&t=4s",
-        "resolution": "720p",
-        "sample_every" :2,
-        "provider": "youtube",
-        "length": 60
-    }
-
-@pytest.fixture
-def ezviz():
-    return {
-        "type": "stream",
-        "ipv4": "139.64.63.135",
-        "port": "554",
-        "username": "admin",
-        "password": "MWJUES",
-        "sample_every" :10,
-        "provider": "rtsp",
-        "length": 60
-    }
+    with open("./workflows/kaust_fish_counter_threaded_async.json") as f:
+        return json.load(f)
 
 
 @pytest.fixture
 def arabian_angelfish():
-    return {
-        "type": "file",
-        "path": "./tests/media/arabian_angelfish.mov",
-        "sample_every" :1
-    }
+    # TODO: Should come from backend
+    with open("./workflows/arabian_angelfish.json") as f:
+        return json.load(f)
 
 @pytest.fixture
-def lutjanis():
-    return {
-        "type": "file",
-        "path": "./tests/media/lutjanis.mov",
-        "sample_every" :30
-    }
-
-@pytest.fixture
-def vehicles():
-    return {
-        "type": "file",
-        "path": "./tests/media/cam_04.mp4",
-        "sample_every" :30
-    }
+def arabian_angelfish_sequential():
+    # TODO: Should come from backend
+    with open("./workflows/arabian_angelfish_sequential.json") as f:
+        return json.load(f)

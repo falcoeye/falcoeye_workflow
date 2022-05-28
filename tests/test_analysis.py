@@ -2,6 +2,12 @@ import json
 import time
 import os
 import errno
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -10,23 +16,26 @@ def check_status(client,analysis_id):
     resp = client.get(f"/api/analysis/status/{analysis_id}")
     assert resp.status_code == 200
     status = resp.json
-    return status
+    busy = False
+    for v in status.values():
+        busy = busy or v
+    return status,busy
 
-def test_web_analysis(client,harbour,fishfinderw,fishfinderm):
+def test_file_analysis(client,fishfinder):
 
     data = {
         "analysis": {
-            "id": "test_stream"
-        },
-        "stream": harbour,
-        "workflow": {
-            "structure":fishfinderw,   
-            "model":fishfinderm,
+            "id": "test_video",
+            "async": False,
             "args": {
-                "source_type":"stream",
-                "output_path": "./tests/fishfinder_harbour.csv"
+                "filename": "./tests/media/lutjanis.mov",
+                "sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "prefix": "./tests/analysis/test_video/",
             }
-        }
+        },
+        "workflow": fishfinder   
     }
 
     resp = client.post(
@@ -34,30 +43,32 @@ def test_web_analysis(client,harbour,fishfinderw,fishfinderm):
         data=json.dumps(data),
         content_type="application/json",
     )
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
-    status = check_status(client,"test_stream")
-    print(status,flush=True)
-    while status["workflow_status"]:
+    status,busy = check_status(client,"test_video")
+    logging.info(status)
+    while busy:
         time.sleep(3)
-        status = check_status(client,"test_stream")
-        print(status,flush=True)
+        status,busy = check_status(client,"test_video")
+        logging.info(status)
 
-def test_file_analysis(client,lutjanis,fishfinderw,fishfinderm):
+def test_async_threaded_file_analysis(client,ta_fishfinder):
 
     data = {
         "analysis": {
-            "id": "test_video"
-        },
-        "stream": lutjanis,
-        "workflow": {
-            "structure":fishfinderw,   
-            "model":fishfinderm,
+            "id": "test_video_threaded_async",
+            "async": True,
             "args": {
-                "source_type":"video",
-                "output_path": "./tests/fishfinder_lutjanis.csv"
+                "filename": "./tests/media/lutjanis.mov",
+                "sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "prefix": "./tests/analysis/test_video_threaded_async/",
+                "frequency": 3
             }
-        }
+        },
+        "workflow": ta_fishfinder   
     }
 
     resp = client.post(
@@ -65,109 +76,85 @@ def test_file_analysis(client,lutjanis,fishfinderw,fishfinderm):
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
-    status = check_status(client,"test_video")
-    print(status,flush=True)
-    while status["workflow_status"]:
+    status,busy = check_status(client,"test_video_threaded_async")
+    logging.info(status)
+    while busy:
         time.sleep(3)
-        status = check_status(client,"test_video")
-        print(status,flush=True)
+        status,busy = check_status(client,"test_video_threaded_async")
+        logging.info(status)
 
-def test_multilabel_analysis(client,vehicles,veheyew,veheyem):
+def test_sequential_cut_video_segment_analysis(client,arabian_angelfish_sequential):
 
     data = {
         "analysis": {
-            "id": "test_multilabel"
-        },
-        "stream": vehicles,
-        "workflow": {
-            "structure":veheyew,   
-            "model":veheyem,
+            "id": "test_arabian_angelfish_sequential",
+            "async": False,
             "args": {
-                "source_type":"video",
-                "output_path": "./tests/careye_veh.csv"
-            }
-        }
-    }
-
-    resp = client.post(
-        "/api/analysis/",
-        data=json.dumps(data),
-        content_type="application/json",
-    )
-    print(resp.json,resp.status_code)
-    assert resp.status_code == 200   
-
-    status = check_status(client,"test_multilabel")
-    print(status,flush=True)
-    while status["workflow_status"]:
-        time.sleep(3)
-        status = check_status(client,"test_multilabel")
-        print(status,flush=True)
-
-def test_rtsp_camera(client,ezviz,humanw,humanm):
-    data = {
-        "analysis": {
-            "id": "test_rtsp"
-        },
-        "stream": ezviz,
-        "workflow": {
-            "structure":humanw,   
-            "model":humanm,
-            "args": {
-                "source_type":"stream",
-                "output_path": "./tests/human.csv"
-            }
-        }
-    }
-
-    resp = client.post(
-        "/api/analysis/",
-        data=json.dumps(data),
-        content_type="application/json",
-    )
-    print(resp.json,resp.status_code)
-    assert resp.status_code == 200   
-
-    status = check_status(client,"test_rtsp")
-    print(status,flush=True)
-    while status["workflow_status"]:
-        time.sleep(3)
-        status = check_status(client,"test_rtsp")
-        print(status,flush=True)
-
-def test_cut_video_segments(client,arabian_angelfish,fourtythreefishw,fourtythreefishm):
-
-    data = {
-        "analysis": {
-            "id": "test_cut_video_segments"
-        },
-        "stream": arabian_angelfish,
-        "workflow": {
-            "structure":fourtythreefishw,   
-            "model":fourtythreefishm,
-            "args": {
-                "source_type":"video",
-                "output_prefix": "./tests/arabian_angelfish",
-                "object_name" : "arabian_angelfish",
+                "filename": "./tests/media/arabian_angelfish_short.mov",
+                "sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
                 "min_to_trigger_in": 5,
                 "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish_sequential",
+                "length": -1,
+                "frequency": 1
             }
-        }
+        },
+        "workflow": arabian_angelfish_sequential   
     }
+
     resp = client.post(
         "/api/analysis/",
         data=json.dumps(data),
         content_type="application/json",
     )
-    print(resp.json,resp.status_code)
+    logging.info(resp.json)
     assert resp.status_code == 200   
 
-    status = check_status(client,"test_cut_video_segments")
-    print(status,flush=True)
-    while status["workflow_status"]:
+    status,busy = check_status(client,"test_arabian_angelfish_sequential")
+    logging.info(status)
+    while busy:
         time.sleep(3)
-        status = check_status(client,"test_cut_video_segments")
-        print(status,flush=True)
+        status,busy = check_status(client,"test_arabian_angelfish_sequential")
+        logging.info(status)
+
+def test_cut_video_segment_analysis(client,arabian_angelfish):
+
+    data = {
+        "analysis": {
+            "id": "test_arabian_angelfish",
+            "async": True,
+            "args": {
+                "filename": "./tests/media/arabian_angelfish_short.mov",
+                "sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/arabian_angelfish",
+                "length": -1,
+                "frequency": 1
+            }
+        },
+        "workflow": arabian_angelfish   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_arabian_angelfish")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_arabian_angelfish")
+        logging.info(status)
+
