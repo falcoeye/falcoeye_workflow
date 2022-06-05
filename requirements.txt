@@ -7,7 +7,7 @@ cachetools==5.2.0
 certifi==2022.5.18.1
 charset-normalizer==2.0.12
 click==8.1.3
--e git+git@github.com:falcoeye/falcoeye_kubernetes.git@f5d7835c707a6bd79ba1bbccd44c2a4f2435fb9e#egg=falcoeye_kubernetes
+-e git+ssh://git@github.com/falcoeye/falcoeye_kubernetes.git@e72879c6e1ca8539c1de2b6a65bad7b8276cdf3c#egg=falcoeye_kubernetes
 Flask==2.1.2
 flask-restx==0.5.1
 frozenlist==1.3.0
@@ -41,6 +41,7 @@ pyrsistent==0.18.1
 PySocks==1.7.1
 pytest==7.1.2
 python-dateutil==2.8.2
+python-dotenv==0.20.0
 pytz==2022.1
 PyYAML==6.0
 requests==2.27.1
