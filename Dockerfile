@@ -35,8 +35,8 @@ RUN apt-get update && \
 
 RUN pip3 install gunicorn
 
-EXPOSE 5000
+EXPOSE 7000
 
 COPY . .
 
-CMD ["gunicorn", "-b 0.0.0.0:5000", "falcoeye:app"]
+CMD ["gunicorn", "-b 0.0.0.0:7000", "falcoeye:app"]
