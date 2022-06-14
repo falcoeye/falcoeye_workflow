@@ -20,7 +20,6 @@ RUN touch /root/.ssh/known_hosts
 # Add git providers to known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
-
 MAINTAINER "falcoeye team"
 
 WORKDIR /usr/src/app
