@@ -92,7 +92,6 @@
             "length": "$length",
             "sample_every": "$sample_every"
         },   
-       
         {
             "name": "findfish_model",
             "type": "TFObjectDetectionModel",
