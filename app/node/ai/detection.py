@@ -77,8 +77,11 @@ class FalcoeyeDetectionNode(Node):
         Node.__init__(self,name)
         self._min_score_thresh = min_score_thresh
         self._max_boxes = max_boxes
-        with open(labelmap) as f:
-            self._category_index = {int(k):v for k,v in json.load(f).items()}
+        if type(labelmap) == str:
+            with open(labelmap) as f:
+                self._category_index = {int(k):v for k,v in json.load(f).items()}
+        elif type(labelmap) == dict:
+            self._category_index = {int(k):v for k,v in labelmap.items()}
 
     def translate(self,detections):
         _detections = []
