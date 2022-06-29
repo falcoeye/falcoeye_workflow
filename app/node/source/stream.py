@@ -8,6 +8,7 @@ import requests
 import streamlink
 import logging
 import time
+import os
 
 from .source import Source
 
@@ -53,14 +54,15 @@ class StreamingSource(Source):
         logging.info(f"Exiting stream loop {c_time}")
         self.close()
     
-    def run_async(self):
+    def run_async(self,done_callback,error_callback):
+        self.done_callback = done_callback
         self.open()
         self._thread = Thread(target=self.run, args=(),daemon=True)
         self._thread.start()
 
 class StreamingServerSource(StreamingSource):
     def __init__(self, name, url,  resolution="best", sample_every=5, length=30,**kwargs):
-        Source.__init__(self,name,sample_every,length)
+        StreamingSource.__init__(self,name,sample_every,length)
         self._url = url
         self._resolution = resolution
         self._width = -1
@@ -77,11 +79,16 @@ class StreamingServerSource(StreamingSource):
         except streamlink.exceptions.NoPluginError:
             logging.warning(f"Warning: NO STREAM AVAILABLE in {url}")
             return None
+        
+        logging.info(f"Starting streaming with resolution {resolution}")
+        ffmpeg = "/usr/local/bin/ffmpeg"
+        if not os.path.exists(ffmpeg):
+            ffmpeg = "/usr/bin/ffmpeg"
 
         stream = streams[resolution]
         pipe = sp.Popen(
             [
-                "/usr/local/bin/ffmpeg",
+                ffmpeg,
                 "-i",
                 stream.url,
                 "-loglevel",
@@ -112,7 +119,7 @@ class StreamingServerSource(StreamingSource):
                     self._height * self._width * 3
                 )  # read length*width*3 bytes (= 1 frame)
 
-        frame = numpy.fromstring(raw_image, dtype="uint8").reshape(
+        frame = np.fromstring(raw_image, dtype="uint8").reshape(
             (self._height, self._width, 3)
         )
         return True,frame

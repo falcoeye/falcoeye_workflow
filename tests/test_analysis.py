@@ -158,3 +158,70 @@ def test_cut_video_segment_analysis(client,arabian_angelfish):
         status,busy = check_status(client,"test_arabian_angelfish")
         logging.info(status)
 
+def test_async_threaded_camera_analysis(client,ta_fishfinder):
+
+    data = {
+        "analysis": {
+            "id": "test_camera_threaded_async",
+            "async": True,
+            "args": {
+                "url": "https://www.youtube.com/watch?v=NwWgOilQuzw&t=4s",
+                "resolution": "720p",
+                "sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "length": 3,
+                "prefix": "./tests/analysis/test_video_threaded_async/",
+            }
+        },
+        "workflow": ta_fishfinder   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_camera_threaded_async")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_camera_threaded_async")
+        logging.info(status)
+
+def test_camera_analysis(client,fishfinder):
+
+    data = {
+        "analysis": {
+            "id": "test_camera",
+            "async": False,
+            "args": {
+               "url": "https://www.youtube.com/watch?v=NwWgOilQuzw&t=4s",
+                "resolution": "720p",
+                "sample_every": 30,
+                "min_score_thresh": 0.30,
+                "max_boxes": 30,
+                "length": 3,
+                "prefix": "./tests/analysis/test_camera/",
+            }
+        },
+        "workflow": fishfinder   
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    # status,busy = check_status(client,"test_camera")
+    # logging.info(status)
+    # while busy:
+    #     time.sleep(3)
+    #     status,busy = check_status(client,"test_camera")
+    #     logging.info(status)

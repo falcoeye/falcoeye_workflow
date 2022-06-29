@@ -1,4 +1,3 @@
-
 from app.node.node import Node
 import pandas as pd
 import logging
@@ -21,8 +20,6 @@ class ClassCounter(Node):
         df = pd.DataFrame(table,columns=["Timestamp","Frame_Order"]+self._keys)
         logging.info(f"\n{df}")
         self.sink(df)
-
-
 
 class ClasstMonitor(Node):
     def __init__(self, name, object_name, min_to_trigger_in, min_to_trigger_out):
@@ -101,4 +98,3 @@ class ClasstMonitor(Node):
             self.sink(self._current_sequence)
             self._current_sequence = []
           
-        

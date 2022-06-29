@@ -2,8 +2,9 @@
 from app.node.node import Node
 from .stream import AngelCamSource,YoutubeSource,RTSPSource
 from .video import VideoFileSource
-
+import logging
 def determine_source(**kwargs):
+    logging.info(f"Determining source {kwargs}")
     url = kwargs.get("url", None)
     if url:
         if "youtube" in url:
@@ -19,6 +20,7 @@ def determine_source(**kwargs):
 
 class DynamicSource(Node):
     def __new__(cls,*args,**kwargs): 
+        logging.info(f"Creating dynamic source with args {kwargs}")
         node_class = determine_source(**kwargs)
         return node_class(**kwargs)
     

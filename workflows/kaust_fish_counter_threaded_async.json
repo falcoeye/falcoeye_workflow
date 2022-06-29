@@ -16,6 +16,13 @@
             "default": null
         },
         {
+            "name": "resolution",
+            "type": "string",
+            "disc": "resolution of streaming  in case of streaming server",
+            "source": "user",
+            "default": "best"
+        },
+        {
             "name": "host",
             "type": "string",
             "disc": "host for camera in case of rtsp camera",
@@ -90,8 +97,9 @@
             "username": "$username",
             "password": "$password",
             "length": "$length",
-            "sample_every": "$sample_every"
-        },   
+            "sample_every": "$sample_every",
+            "resolution": "$resolution"
+        },  
         {
             "name": "findfish_model",
             "type": "TFObjectDetectionModel",
