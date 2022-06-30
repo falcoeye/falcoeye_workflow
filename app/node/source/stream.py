@@ -19,6 +19,7 @@ class StreamingSource(Source):
         self._sample_every = sample_every
         self._length = length
         self._streamer = None
+        self._trial = 10
     
     def open(self):
         self._running = True
@@ -31,31 +32,49 @@ class StreamingSource(Source):
 
     def run(self):
         self.open()
-        
-        count = 0
-        t_end = time.time() + self._length
-        c_time = time.time()
-        logging.info(f"Entering stream loop {c_time}")
-        while  c_time < t_end:
-            logging.info(f"Reading new frame")
-            # fetching new frame
-            hasFrame, frame = self.read()
-            logging.info(f"New frame read? {hasFrame} {count} {c_time}")
-            if not hasFrame:
-                break
-            logging.info(f"New frame fetched {count} {c_time}")
-            # sinking data
-            self.sink([c_time,count,frame])
-            # sleeping for $sample_every seconds
-            count += 1
-            time.sleep(self._sample_every)
+        try:
+            count = 0
+            t_end = time.time() + self._length
             c_time = time.time()
+            logging.info(f"Entering stream loop {c_time}")
 
-        logging.info(f"Exiting stream loop {c_time}")
+            while  c_time < t_end:
+                logging.info(f"Reading new frame")
+                # fetching new frame
+                count = 0
+                hasFrame, frame = self.read()
+                while not hasFrame and count < self._trial:
+                    hasFrame, frame = self.read()
+                    count += 1
+
+                logging.info(f"New frame read? {hasFrame} {count} {c_time}")
+                if not hasFrame and count == self._trial:
+                    logging.error("Stream is not reachable")
+                    break
+                elif not hasFrame:
+                    logging.error("Unknown stream issue")
+                    break
+            
+                logging.info(f"New frame fetched {count} {c_time}")
+                # sinking data
+                self.sink([c_time,count,frame])
+                # sleeping for $sample_every seconds
+                count += 1
+                time.sleep(self._sample_every)
+                c_time = time.time()
+
+            logging.info(f"Exiting stream loop {c_time}")
+            if self._done_callback:
+                self._done_callback(self._name)
+        except Exception:
+            self.error_callback(self._name,"Error in streaming")
+        
         self.close()
+        self.close_sinks()
     
     def run_async(self,done_callback,error_callback):
-        self.done_callback = done_callback
+        self._done_callback = done_callback
+        self._error_callback = error_callback
         self.open()
         self._thread = Thread(target=self.run, args=(),daemon=True)
         self._thread.start()
@@ -105,24 +124,34 @@ class StreamingServerSource(StreamingSource):
             stdin=sp.PIPE,
             stdout=sp.PIPE,
         )
+        logging.info(f"Pipe instantiated")
         return pipe
 
     def open(self):
         StreamingSource.open(self)
 
     def close(self):
+        logging.info("Closing streaming server")
         StreamingSource.close(self)
         self._streamer.kill()
+        logging.info("Streaming server closed")
     
     def read(self):
-        raw_image = self._streamer.stdout.read(
-                    self._height * self._width * 3
-                )  # read length*width*3 bytes (= 1 frame)
-
-        frame = np.fromstring(raw_image, dtype="uint8").reshape(
-            (self._height, self._width, 3)
-        )
-        return True,frame
+        try:
+            logging.info("Fetching new frame from stream")
+            raw_image = self._streamer.stdout.read(
+                        self._height * self._width * 3
+                    )  # read length*width*3 bytes (= 1 frame)
+            logging.info("Frame fetched. Creating numpy")
+            frame = np.fromstring(raw_image, dtype="uint8").reshape(
+                (self._height, self._width, 3)
+            )
+            logging.info("Frame fetching succeeded")
+            return True,frame
+        except Exception as error:
+            logging.error("Couldn't fetch frame")
+            return False,None
+        
 
 class AngelCamSource(StreamingServerSource):
     resolutions = {"best": {"width": 1920, "height": 1080}}
@@ -187,3 +216,4 @@ class RTSPSource(StreamingSource):
             self._streamer.release()
         self._streamer = None
  
+

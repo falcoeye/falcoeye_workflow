@@ -41,8 +41,7 @@ class VideoFileSource(Source):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                   
             logging.info(f"Frame {counter}/{self._num_frames}")
-            for sink in self._sinks:
-                self.sink((counter,count,frame))
+            self.sink((counter,count,frame))
             count += 1
             counter += self._sample_every
             if counter > self._length:

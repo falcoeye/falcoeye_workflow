@@ -40,6 +40,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
         self._ntasks = 4
 
     async def task_(self,session,item):
+        logging.info(f"Running task asyncronously for frame {item[1]}")
         o = await self._node.run_on_async(session,item)
         self.sink(o)
 
@@ -52,8 +53,10 @@ class ConcurrentPostTasksThreadWrapper(Node):
                 if self.more():
                     logging.info("New data to sink")
                     item = self.get()
+                    logging.info(f"Creating task for frame {item[1]} with size {item[2].shape}")
                     task = asyncio.create_task(self.task_(session,item))
                     tasks.append(task)
+                    logging.info(f"Task created for frame {item[1]}")
                 if len(tasks) == self._ntasks:
                     logging.info(f"Gathering {self._ntasks} new tasks")
                     await asyncio.gather(*tasks)
@@ -76,6 +79,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
 
     def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
+        self._error_callback = error_callback
         self._continue = True
         self._loop = asyncio.new_event_loop()     
         self._thread = Thread(target=self.start_background_loop,

@@ -41,8 +41,7 @@ class Workflow:
             pass
     
     def error_task_callback(self,task,error):
-
-        pass
+        logging.error(error)
 
     def status(self):
         return self._tasks
