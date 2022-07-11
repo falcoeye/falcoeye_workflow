@@ -43,3 +43,9 @@ def arabian_angelfish_sequential():
     # TODO: Should come from backend
     with open("./workflows/arabian_angelfish_sequential.json") as f:
         return json.load(f)
+
+@pytest.fixture
+def car_monitor():
+    # TODO: Should come from backend
+    with open(f"{DIR}/../workflows/cars_monitor.json") as f:
+        return json.load(f)

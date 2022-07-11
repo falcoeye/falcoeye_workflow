@@ -18,6 +18,10 @@ if os.path.exists(dotenv_path):
 workflow_user = os.getenv("WORKFLOW_USER")
 workflow_password = os.getenv("WORKFLOW_PASSWORD")
 
+artifact_registry = os.getenv("ARTIFACT_REGISTRY")
+if artifact_registry:
+    FalcoServingKube.set_artifact_registry(artifact_registry)
+
 backend_kube = FalcoServingKube("falcoeye-backend")
 backend_server = backend_kube.get_service_address()
 URL = f"http://{backend_server}"
