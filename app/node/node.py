@@ -26,7 +26,9 @@ class Node:
         raise NotImplementedError
     
     def sink(self,data):
+        #logging.info(f"Sinking from {self._name} to {len(self._sinks)} sinks")
         for sink in self._sinks:
+            #logging.info(f"Sinking from {self._name} to {sink._name}")
             sink._data.put(data)
     
     def open(self):

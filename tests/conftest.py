@@ -49,3 +49,10 @@ def car_monitor():
     # TODO: Should come from backend
     with open(f"{DIR}/../workflows/cars_monitor.json") as f:
         return json.load(f)
+
+@pytest.fixture
+def cars_monitor_leaky():
+    # TODO: Should come from backend
+    with open(f"{DIR}/../workflows/car_monitor_leaky.json") as f:
+        return json.load(f)
+

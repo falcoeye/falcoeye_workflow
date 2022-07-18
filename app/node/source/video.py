@@ -2,7 +2,7 @@ from threading import Thread
 import cv2
 import numpy
 
-from .source import Source
+from .source import Source,FalcoeyeFrame
 import logging
 
 class VideoFileSource(Source):
@@ -41,7 +41,8 @@ class VideoFileSource(Source):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                   
             logging.info(f"Frame {counter}/{self._num_frames}")
-            self.sink((counter,count,frame))
+            self.sink((FalcoeyeFrame(frame,count,counter)))
+            #logging.info(f"Frame {counter}/{self._num_frames} sinked")
             count += 1
             counter += self._sample_every
             if counter > self._length:

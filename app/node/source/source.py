@@ -1,6 +1,7 @@
 
 from app.node.node import Node
-
+import logging
+import cv2
 
 class Source(Node):
     def __init__(self,name,**kwargs):
@@ -16,3 +17,40 @@ class Source(Node):
         pass
 
 
+class FalcoeyeFrame:
+    def __init__(self,frame,frame_number,relative_time):
+        #logging.info(f"New FalcoeyeFrame {frame_number} {relative_time}")
+        self._frame = frame
+        self._frame_number = frame_number
+        self._relative_time = relative_time
+        self._frame_bgr = cv2.cvtColor(self._frame, cv2.COLOR_RGB2BGR)
+    
+    @property
+    def size(self):
+        return self._frame.shape
+
+    @property
+    def frame(self):
+        return self._frame
+
+    @property
+    def frame_bgr(self):
+        return self._frame_bgr
+    
+
+    @property
+    def framestamp(self):
+        return self._frame_number
+    
+    @property
+    def timestamp(self):
+        return self._relative_time
+    
+    def __lt__(self,other):
+        return self._frame_number < other.framestamp
+    
+    def __eq__(self,other):
+        if type(other) == FalcoeyeFrame:
+            return self._frame_number == other.framestamp
+        elif type(other) == int:
+            return self._frame_number == other

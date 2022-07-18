@@ -7,28 +7,27 @@ import numpy as np
 from .utils import get_color_from_number
 from PIL import Image
 import cv2
+
+
 class FalcoeyeDetection:
-    def __init__(self,frame,detections, category_map,frame_number, relative_time):
+    def __init__(self,frame,detections, category_map):
         self._frame = frame
         self._detections = detections
         self._category_map = category_map
-        self._frame_number = frame_number
-        self._relative_time = relative_time
-        self._frame_bgr = cv2.cvtColor(self._frame, cv2.COLOR_RGB2BGR)
         self._boxes = [d["box"] for d in self._detections]
         self._classes = [d["class"] for d in self._detections]
     
     @property
     def size(self):
-        return self._frame.shape
+        return self._frame.size
     
     @property
     def frame(self):
-        return self._frame
+        return self._frame.frame
 
     @property
     def frame_bgr(self):
-        return self._frame_bgr
+        return self._frame.frame_bgr
     
     @property
     def count(self):
@@ -44,11 +43,11 @@ class FalcoeyeDetection:
 
     @property
     def framestamp(self):
-        return self._frame_number
+        return self._frame.framestamp
     
     @property
     def timestamp(self):
-        return self._relative_time
+        return self._frame.timestamp
 
     def count_of(self, category):
         if category in self._category_map:
@@ -70,6 +69,21 @@ class FalcoeyeDetection:
 
     def save_frame(self,path):
         Image.fromarray(self._frame).save(f"{path}/{self._frame_number}.png")
+
+    def __lt__(self,other):
+        if type(other) == FalcoeyeDetection:
+            return self._frame < other._frame
+        else:
+            # assuming other is FalcoeyeFrame
+            return self._frame < other
+    
+    def __eq__(self,other):
+        if type(other) == FalcoeyeDetection:
+            return self._frame == other._frame
+        else:
+            # assuming other is FalcoeyeFrame or int
+            return self._frame == other
+
 
 class FalcoeyeDetectionNode(Node):
     
@@ -119,16 +133,13 @@ class FalcoeyeDetectionNode(Node):
         logging.info(f"Running falcoeye detection")
         while self.more():
             item = self.get()
-            init_time, frame_count, frame,raw_detections = item 
-            logging.info(f"New frame for falcoeye detection {init_time} {frame_count}")
+            frame,raw_detections = item
+            logging.info(f"New frame for falcoeye detection  {frame.framestamp} {frame.timestamp}")
             detections, category_map = self.translate(raw_detections)
             fe_detection = FalcoeyeDetection(frame,detections, 
-                    category_map, 
-                    frame_count, 
-                    init_time)
+                    category_map)
             self.sink(fe_detection)
     
-
 class TFObjectDetectionModel(Node):
     
     def __init__(self, name,
@@ -159,33 +170,29 @@ class TFObjectDetectionModel(Node):
         logging.info(f'Predicting {self._data.qsize()} frames')
         while self.more():
             item = self.get()
-            init_time, frame_count, frame = item 
-            logging.info(f"New frame to post to container {init_time} {frame_count}")
-            raw_detections =  self._container.post(frame)
-            logging.info(f"Prediction received {frame_count}")
-            self.sink([init_time,frame_count,frame,raw_detections])
+            
+            logging.info(f"New frame to post to container {item.framestamp} {item.timestamp} {item.frame.shape}")
+            raw_detections =  self._container.post(item.frame)
+            logging.info(f"Prediction received {item.framestamp}")
+            self.sink([item,raw_detections])
         
         logging.info(f"{self._name} completed")
 
     async def run_on_async(self,session,item):
         if not self.check_container():
             return
-        init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {init_time} {frame_count}")
-        raw_detections =  await self._container.post_async(session,frame)
-        logging.info(f"Prediction received {frame_count}")
-        return [init_time,frame_count,frame,raw_detections]
+        #init_time, frame_count, frame = item 
+        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
+        raw_detections =  await self._container.post_async(session,item.frame)
+        logging.info(f"Prediction received {item.framestamp}")
+        return [item,raw_detections]
     
     def run_on(self,item):
         if not self.check_container():
             return
-        init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {init_time} {frame_count}")
-        raw_detections =  self._container.post(frame)
-        logging.info(f"Prediction received {frame_count}")
-        return [init_time,frame_count,frame,raw_detections]
-    
-    
-
-
-    
+        #init_time, frame_count, frame = item 
+        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
+        raw_detections =  self._container.post(item.frame)
+        logging.info(f"Prediction received {item.framestamp}")
+        return [item,raw_detections]
+       

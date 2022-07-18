@@ -10,7 +10,7 @@ import logging
 import time
 import os
 
-from .source import Source
+from .source import Source, FalcoeyeFrame
 
 class StreamingSource(Source):
     def __init__(self, name, sample_every=5, length=30,**kwargs):
@@ -57,7 +57,7 @@ class StreamingSource(Source):
             
                 logging.info(f"New frame fetched {count} {c_time}")
                 # sinking data
-                self.sink([c_time,count,frame])
+                self.sink([FalcoeyeFrame(frame,count,c_time)])
                 # sleeping for $sample_every seconds
                 count += 1
                 time.sleep(self._sample_every)

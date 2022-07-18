@@ -40,7 +40,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
         self._ntasks = 4
 
     async def task_(self,session,item):
-        logging.info(f"Running task asyncronously for frame {item[1]}")
+        logging.info(f"Running task asyncronously for frame {item.framestamp}")
         o = await self._node.run_on_async(session,item)
         self.sink(o)
 
@@ -49,14 +49,15 @@ class ConcurrentPostTasksThreadWrapper(Node):
         tasks = []
         connector = aiohttp.TCPConnector(limit=self._tcplimit)
         async with aiohttp.ClientSession(connector=connector) as session:
+            logging.info(f"async session defined with {self._tcplimit} tcp limits for {self.name}")        
             while self._continue or self.more():
                 if self.more():
                     logging.info("New data to sink")
                     item = self.get()
-                    logging.info(f"Creating task for frame {item[1]} with size {item[2].shape}")
+                    logging.info(f"Creating task for frame {item.framestamp} with size {item.size}")
                     task = asyncio.create_task(self.task_(session,item))
                     tasks.append(task)
-                    logging.info(f"Task created for frame {item[1]}")
+                    logging.info(f"Task created for frame {item.framestamp}")
                 if len(tasks) == self._ntasks:
                     logging.info(f"Gathering {self._ntasks} new tasks")
                     await asyncio.gather(*tasks)

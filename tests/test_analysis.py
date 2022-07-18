@@ -225,3 +225,41 @@ def test_camera_analysis(client,fishfinder):
     #     time.sleep(3)
     #     status,busy = check_status(client,"test_camera")
     #     logging.info(status)
+
+def test_leaky_cut_video_segment_analysis(client,cars_monitor_leaky):
+
+    data = {
+        "analysis": {
+            "id": "test_leaky_car_monitor",
+            "async": True,
+            "args": {
+                "filename": "./tests/media/house_cars.mp4",
+                "sample_every": 1,
+                "min_score_thresh": 0.10,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/test_leaky_car_monitor",
+                "length": 20,
+                "frequency": 1,
+                "timed_gate_open_freq": 30,
+                "timed_gate_opened_last": 10
+            }
+        },
+        "workflow": cars_monitor_leaky["structure"]  
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_leaky_car_monitor")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_leaky_car_monitor")
+        logging.info(status)

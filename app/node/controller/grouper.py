@@ -1,8 +1,9 @@
 from app.node.node import Node
 from threading import Thread
 import logging
+import queue
+
 class SequenceRunner(Node):
-    
     def __init__(self,name,nodes,frequency=1):
         Node.__init__(self,name)
         self._nodes = nodes
@@ -83,3 +84,31 @@ class SequenceRunner(Node):
         self._continue = True
         self._thread = Thread(target=self.run_forever_, args=(),daemon=True)
         self._thread.start()
+
+class SortedSequence(Node):
+    def __init__(self,name):
+        Node.__init__(self,name)
+        self._data = queue.PriorityQueue()
+        self._expected_start = 0
+    
+    def run(self):
+        logging.info(f"Running SortedSequence {self._name}")
+        while self.more():
+            if self._data.queue[0] == self._expected_start:
+                logging.info(f"Expected root {self._expected_start} so sink. Size {self._data.qsize()}")
+                self._expected_start += 1
+                item = self.get()
+                self.sink(item)
+            else:
+                logging.info(f"Expected root {self._expected_start} not yet available. Size {self._data.qsize()}")
+                break
+            
+    
+    def open(self):
+        self._expected_start = 0
+
+    def close(self):
+        self._expected_start = 0
+        Node.close(self)
+
+
