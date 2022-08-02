@@ -29,7 +29,7 @@ def fishfinder():
 def ta_fishfinder():
     # TODO: Should come from backend
     with open("./workflows/kaust_fish_counter_threaded_async.json") as f:
-        return json.load(f)
+        return json.load(f)["structure"]
 
 
 @pytest.fixture
@@ -56,3 +56,8 @@ def cars_monitor_leaky():
     with open(f"{DIR}/../workflows/car_monitor_leaky.json") as f:
         return json.load(f)
 
+@pytest.fixture
+def arabian_angelfish_monitor_leaky():
+    # TODO: Should come from backend
+    with open(f"{DIR}/../workflows/arabian_angelfish_leaky.json") as f:
+        return json.load(f)

@@ -37,7 +37,7 @@ class ConcurrentPostTasksThreadWrapper(Node):
         self._node = node
         self._loop = None
         self._tcplimit = tcplimit
-        self._ntasks = 4
+        self._ntasks = tcplimit
 
     async def task_(self,session,item):
         logging.info(f"Running task asyncronously for frame {item.framestamp}")

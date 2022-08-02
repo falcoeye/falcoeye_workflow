@@ -30,7 +30,7 @@ class StreamingSource(Source):
     def read(self):
         raise NotImplementedError
 
-    def run(self):
+    def run(self,context=None):
         self.open()
         try:
             count = 0

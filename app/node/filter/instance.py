@@ -6,7 +6,7 @@ class TypeFilter(Node):
         Node.__init__(self,name)
         self._keys = keys
 
-    def run(self):
+    def run(self,context=None):
         # expecting items of type FalcoeyeDetction
         while self.more():
             item = self.get()

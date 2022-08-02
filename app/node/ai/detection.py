@@ -1,6 +1,6 @@
 
 from app.node.node import Node
-from app.k8s import start_tfserving_container
+from app.artifact import get_model_server
 import json
 import logging
 import numpy as np
@@ -102,6 +102,10 @@ class FalcoeyeDetectionNode(Node):
 
         _category_map = {k:[] for k in self._category_index.values()}
         _category_map["unknown"] = []
+
+        if detections is None or type(detections) != dict or "detection_boxes" not in detections:
+            return _detections, _category_map
+
         boxes = np.array(detections["detection_boxes"])
         classes = np.array(detections["detection_classes"]).astype(int)
         scores = np.array(detections["detection_scores"])
@@ -129,7 +133,7 @@ class FalcoeyeDetectionNode(Node):
                 counter += 1
         return _detections, _category_map
 
-    def run(self):
+    def run(self,context=None):
         logging.info(f"Running falcoeye detection")
         while self.more():
             item = self.get()
@@ -149,22 +153,30 @@ class TFObjectDetectionModel(Node):
         Node.__init__(self,name)
         self._model_name = model_name
         self._version = version
-        self._container = None
+        self._model_server = None
+        
+        self._init_serving_service()
+        if not self._serving_ready:
+            logging.warning(f"Model server is off or doesn't exists {model_name}")
 
-    def check_container(self):
-        if not self._container:
-            logging.info(f"Starting tfserving container")
-            self._container = start_tfserving_container(self._model_name,self._version)
-            if not self._container:
-                logging.error("Couldn't start container")
-                return False
-            logging.info(f"Container started. Prediction path: {self._container._predict_url}")
+    def _init_serving_service(self):
+        self._model_server = get_model_server(self._model_name,self._version)
+        if self._model_server is None:
+            self._serving_ready = False
+        else:
+            self._serving_ready = True
 
-        return True
+    def _is_ready(self):
+        if self._serving_ready:
+            return True
+        else:
+            # Try now to init
+            self._init_serving_service()
+            return self._serving_ready
 
-    def run(self):
+    def run(self,context=None):
         # TODO: find better name, since this function might initialize the container internally
-        if not self.check_container():
+        if not self._is_ready:
             return
              
         logging.info(f'Predicting {self._data.qsize()} frames')
@@ -172,27 +184,27 @@ class TFObjectDetectionModel(Node):
             item = self.get()
             
             logging.info(f"New frame to post to container {item.framestamp} {item.timestamp} {item.frame.shape}")
-            raw_detections =  self._container.post(item.frame)
+            raw_detections =  self._model_server.post(item.frame)
             logging.info(f"Prediction received {item.framestamp}")
             self.sink([item,raw_detections])
         
         logging.info(f"{self._name} completed")
 
     async def run_on_async(self,session,item):
-        if not self.check_container():
+        if not self._is_ready():
             return
         #init_time, frame_count, frame = item 
         logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  await self._container.post_async(session,item.frame)
+        raw_detections =  await self._model_server.post_async(session,item.frame)
         logging.info(f"Prediction received {item.framestamp}")
         return [item,raw_detections]
     
     def run_on(self,item):
-        if not self.check_container():
+        if not self._is_ready():
             return
         #init_time, frame_count, frame = item 
         logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  self._container.post(item.frame)
+        raw_detections =  self._model_server.post(item.frame)
         logging.info(f"Prediction received {item.framestamp}")
         return [item,raw_detections]
        

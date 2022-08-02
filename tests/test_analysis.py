@@ -28,7 +28,7 @@ def test_file_analysis(client,fishfinder):
             "id": "test_video",
             "async": False,
             "args": {
-                "filename": "./tests/media/lutjanis.mov",
+                "filename": "../media/lutjanis.mov",
                 "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
@@ -60,7 +60,7 @@ def test_async_threaded_file_analysis(client,ta_fishfinder):
             "id": "test_video_threaded_async",
             "async": True,
             "args": {
-                "filename": "./tests/media/lutjanis.mov",
+                "filename": "../media/arabian_angelfish_short.mov",
                 "sample_every": 30,
                 "min_score_thresh": 0.30,
                 "max_boxes": 30,
@@ -262,4 +262,42 @@ def test_leaky_cut_video_segment_analysis(client,cars_monitor_leaky):
     while busy:
         time.sleep(3)
         status,busy = check_status(client,"test_leaky_car_monitor")
+        logging.info(status)
+
+def test_leaky_arabian_angelfish_analysis(client,arabian_angelfish_monitor_leaky):
+
+    data = {
+        "analysis": {
+            "id": "test_leaky_arabian_angelfish",
+            "async": True,
+            "args": {
+                "filename": "../media/arabian_angelfish_short.mp4",
+                "sample_every": 1,
+                "min_score_thresh": 0.40,
+                "max_boxes": 30,
+                "min_to_trigger_in": 5,
+                "min_to_trigger_out": 5,
+                "prefix": "./tests/analysis/test_cut_video_segment/test_leaky_arabian_angelfish",
+                "length": -1,
+                "frequency": 1,
+                "timed_gate_open_freq": 30,
+                "timed_gate_opened_last": 5
+            }
+        },
+        "workflow": arabian_angelfish_monitor_leaky["structure"]  
+    }
+
+    resp = client.post(
+        "/api/analysis/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    logging.info(resp.json)
+    assert resp.status_code == 200   
+
+    status,busy = check_status(client,"test_leaky_arabian_angelfish")
+    logging.info(status)
+    while busy:
+        time.sleep(3)
+        status,busy = check_status(client,"test_leaky_arabian_angelfish")
         logging.info(status)

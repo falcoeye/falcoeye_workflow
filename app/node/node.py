@@ -8,10 +8,19 @@ class Node:
         self._thread = None
         self._done_callback = None
         self._continue = False
+        self._context = None
     
     def close_sinks(self):
         for sink in self._sinks:
             sink.close()
+    
+    def set_context(self,app):
+        self._context = app
+
+    @property
+    def context(self):
+        return self._context
+
     @property
     def name(self):
         return self._name
@@ -19,7 +28,7 @@ class Node:
     def add_sink(self,sink):
         self._sinks.append(sink)
     
-    def run(self):
+    def run(self,context=None):
         raise NotImplementedError
     
     def run_async(self,done_callback,error_callback):

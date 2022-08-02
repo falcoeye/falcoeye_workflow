@@ -2,6 +2,7 @@ from .utils import fill_args
 from app.node import create_node_from_dict,Source
 import logging 
 import threading
+from flask import current_app
 
 class Workflow:
     def __init__(self,analysis_id,nodes,starters,nodes_in_order):
@@ -69,6 +70,9 @@ class WorkflowFactory:
             elif "node" in n:
                 n["node"] = nodes[n["node"]]
             nodes[n["name"]] = create_node_from_dict(n)
+            # to avoid RuntimeError: working outside of request context
+            # when running asynchronously 
+            nodes[n["name"]].set_context(current_app._get_current_object())
         
         logging.info(nodes)
 

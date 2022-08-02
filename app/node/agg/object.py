@@ -7,7 +7,7 @@ class ClassCounter(Node):
         Node.__init__(self,name)
         self._keys = keys
 
-    def run(self):
+    def run(self,context=None):
         table = []
         logging.info(f"Running {self.name} for {self._keys}")
         while self.more():
@@ -87,7 +87,7 @@ class ClasstMonitor(Node):
                 self._trigger_count = 0
                 self._triggered_once = False
         
-    def run(self):
+    def run(self,context=None):
         while self.more():
             logging.info(f"New item for {self._name}")
             item = self.get()
@@ -118,7 +118,7 @@ class LeakyClasstMonitor(ClasstMonitor):
         self._current_sequence = []
         self._buffer = []
 
-    def run(self):
+    def run(self,context=None):
         while self.more():
             logging.info(f"New item for {self._name}")
             item = self.get()

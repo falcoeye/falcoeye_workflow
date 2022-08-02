@@ -15,7 +15,7 @@ class ZoneFilter(Node):
     def translate_pixel(self, x, y):
         return int(x * self._width), int(y * self._height)
 
-    def run(self):
+    def run(self,context=None):
         # expecting items of type FalcoeyeDetction
         while self.more():
             item = self.get()

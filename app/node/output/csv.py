@@ -3,6 +3,9 @@ from app.node.output import Output
 import os
 import logging
 import json
+from app.utils import rmtree,mkdir,rm_file, exists
+from flask import current_app
+import pandas as pd
 
 class CSVWriter(Output):
     def __init__(self, name,prefix,
@@ -13,28 +16,47 @@ class CSVWriter(Output):
         self._filename = f"{prefix}/{name}.csv"
         self._xaxis = xaxis
         self._yaxis = yaxis
-        if os.path.exists(self._filename):
-            os.remove(self._filename) 
+        self._df = None
+        if exists(os.path.relpath(self._filename),self.context):
+            rm_file(self._filename,self.context)
         
-    def write_meta(self):
+        logging.info(f"Creating folder {prefix}")
+        mkdir(prefix,self.context)
+        
+        
+    def write_meta(self,context):
         meta = {
             "type": "csv",
-            "filename": f"{self._filename}",
+            "filename": f"{os.path.basename(self._filename)}",
             "x-axis": self._xaxis,
             "y-axis": self._yaxis
         }
-        with open(f'{self._prefix}/meta.json',"w") as f:
-            f.write(json.dumps(meta))
+        metafile = f"{self._prefix}/meta.json"
+        logging.info(f"Creating meta data in {metafile}")
+        with context.config["FS_OBJ"].open(
+                os.path.relpath(metafile), "w"
+            ) as f:
+                f.write(json.dumps(meta))
 
-    def run(self):
+    def run(self,context=None):
         # expect dataframe object
-        logging.info(f"Running {self.name}")
-        os.makedirs(os.path.dirname(self._filename),exist_ok=True)
-        self.write_meta()
-        while self.more():
-            item = self.get()
-            logging.info(f"New item for {self.name}\n{item}")
-            if os.path.exists(self._filename):
-                item.to_csv(self._filename, mode='a', index=False, header=False)
-            else:
-                item.to_csv(self._filename, index=False)
+        if context is None:
+            context = self.context
+        # TODO: refactor
+        logging.info(f"Running {self.name} {self._filename}")
+        try:
+            self.write_meta(context)
+            while self.more():
+                item = self.get()
+                logging.info(f"New item for {self.name}\n{item}")
+                if self._df is None:
+                    self._df = item
+                else:
+                    self._df = pd.concat([self._df,item])
+
+                with context.config["FS_OBJ"].open(
+                    os.path.relpath(self._filename), "w") as f:
+                    logging.info(f"Writing to {os.path.relpath(self._filename)}")
+                    f.write(self._df.to_csv(None,index=False))   
+        except Exception as e:
+            logging.erro(e)

@@ -9,8 +9,11 @@ class AnalysisService:
     ANALYSIS = {}
     @staticmethod
     def new_analysis(data):
+        logging.info(f"New analysis requested")
         workflow_struct = data["workflow"]
         analysis = data["analysis"]
+        logging.info(f"Analysis id: {analysis['id']}")
+        logging.info(data)
         
         # Creating workflow handler
         workflow = WorkflowFactory.create_from_dict(workflow_struct,analysis)

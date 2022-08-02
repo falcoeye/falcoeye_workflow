@@ -2,6 +2,7 @@ from app.node.node import Node
 from threading import Thread
 import logging
 import queue
+from flask import current_app
 
 class SequenceRunner(Node):
     def __init__(self,name,nodes,frequency=1):
@@ -11,17 +12,19 @@ class SequenceRunner(Node):
         self._counter = 0
         self._sinks = [self._nodes[0]]
     
-    def run_(self):
+    def run_(self,context=None):
         self._counter += 1
         logging.info(f"Buffering sequence {self._counter}/{self._frequency}")
         if self._counter == self._frequency: 
             logging.info(f"Runing sequence now")
             for n in self._nodes:
                 logging.info(f"Runing node {n.name}")
-                n.run()  
+                n.run(context)  
             self._counter = 0
 
-    def run(self):
+    def run(self,context=None):
+        if context is None:
+            context = self.context
         self.open_nodes()
         while self.more():
             item = self.get()
@@ -37,39 +40,46 @@ class SequenceRunner(Node):
         for n in self._nodes:
             logging.info(f"Runing node {n.name}")
             n.run()  
-            
-    def run_forever_(self):
-        # opening the nodes (i.e. setting continue to True)
-        self.open_nodes()
-        logging.info(f"Starting looping for {self.name}")
-        while self._continue or self.more():
-            if not self.more():
-                continue
+          
+    def run_forever_(self,context=None):
+        try:
+            logging.info(f"Running forever for {self.name}")
+            if context is None:
+                context = self.context
+            # opening the nodes (i.e. setting continue to True)
+            logging.info(f"Opening sequence nodes for {self.name}")
+            self.open_nodes()
+            logging.info(f"Starting looping for {self.name}")
+            while self._continue or self.more():
+                if not self.more():
+                    continue
 
-            logging.info(f"New item for {self.name} sequence")
-            item = self.get()
-            self.sink(item)
-            self.run_()
-        logging.info(f"Sequence {self.name} inturrepted.")
-        # flushing the remaining
-        if self._counter != 0:
-            logging.info(f"Flushing queue for {self.name}. {self._counter} item not processed")
-            # tricking the run_ function to force it to run
-            self._counter = self._frequency - 1
-            self.run_()
-        logging.info(f"Sequence {self.name} loop exited")
-        self._counter = 0
-        if self._done_callback:
-            self._done_callback(self._name)
-        
-        # closing the nodes (i.e. setting continue to False)
-        self.close_nodes()
-        # TODO: refactor this
-        # run last time to flush. Some nodes have post close scenarios
-        logging.info("Flushing nodes after closing.")
-        for n in self._nodes:
-            logging.info(f"Runing node {n.name}")
-            n.run()  
+                logging.info(f"New item for {self.name} sequence")
+                item = self.get()
+                self.sink(item)
+                self.run_(context)
+            logging.info(f"Sequence {self.name} inturrepted.")
+            # flushing the remaining
+            if self._counter != 0:
+                logging.info(f"Flushing queue for {self.name}. {self._counter} item not processed")
+                # tricking the run_ function to force it to run
+                self._counter = self._frequency - 1
+                self.run_()
+            logging.info(f"Sequence {self.name} loop exited")
+            self._counter = 0
+            if self._done_callback:
+                self._done_callback(self._name)
+            
+            # closing the nodes (i.e. setting continue to False)
+            self.close_nodes()
+            # TODO: refactor this
+            # run last time to flush. Some nodes have post close scenarios
+            logging.info("Flushing nodes after closing.")
+            for n in self._nodes:
+                logging.info(f"Runing node {n.name}")
+                n.run()  
+        except Exception as e:
+            logging.error(e)
     
     def open_nodes(self):
         for node in self._nodes:
@@ -80,10 +90,12 @@ class SequenceRunner(Node):
             node.close() 
 
     def run_async(self,done_callback,error_callback):
+        logging.info(f"Running {self.name} async in {self.context} context")
         self._done_callback = done_callback
         self._continue = True
-        self._thread = Thread(target=self.run_forever_, args=(),daemon=True)
+        self._thread = Thread(target=self.run_forever_, kwargs={"context":self.context},daemon=True)
         self._thread.start()
+        logging.info(f"Thread for {self.name} started")
 
 class SortedSequence(Node):
     def __init__(self,name):
@@ -91,7 +103,7 @@ class SortedSequence(Node):
         self._data = queue.PriorityQueue()
         self._expected_start = 0
     
-    def run(self):
+    def run(self,context=None):
         logging.info(f"Running SortedSequence {self._name}")
         while self.more():
             if self._data.queue[0] == self._expected_start:
