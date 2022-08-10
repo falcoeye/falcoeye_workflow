@@ -84,7 +84,6 @@ class FalcoeyeDetection:
             # assuming other is FalcoeyeFrame or int
             return self._frame == other
 
-
 class FalcoeyeDetectionNode(Node):
     
     def __init__(self, name, labelmap,min_score_thresh,max_boxes):
@@ -99,16 +98,21 @@ class FalcoeyeDetectionNode(Node):
 
     def translate(self,detections):
         _detections = []
-
+        logging.info("Translating detection")
         _category_map = {k:[] for k in self._category_index.values()}
         _category_map["unknown"] = []
 
         if detections is None or type(detections) != dict or "detection_boxes" not in detections:
             return _detections, _category_map
+        
+        
 
         boxes = np.array(detections["detection_boxes"])
         classes = np.array(detections["detection_classes"]).astype(int)
         scores = np.array(detections["detection_scores"])
+        
+        logging.info(f"#boxes {boxes.shape}, #classes {classes.shape} #scores {scores.shape}")
+
 
         counter = 0
         for i in range(boxes.shape[0]):
@@ -148,19 +152,21 @@ class TFObjectDetectionModel(Node):
     
     def __init__(self, name,
         model_name,
-        version
+        version,
+        protocol="gRPC"
         ):
         Node.__init__(self,name)
         self._model_name = model_name
         self._version = version
         self._model_server = None
+        self._protocol = protocol
         
         self._init_serving_service()
         if not self._serving_ready:
             logging.warning(f"Model server is off or doesn't exists {model_name}")
 
     def _init_serving_service(self):
-        self._model_server = get_model_server(self._model_name,self._version)
+        self._model_server = get_model_server(self._model_name,self._version,self._protocol)
         if self._model_server is None:
             self._serving_ready = False
         else:
@@ -173,6 +179,12 @@ class TFObjectDetectionModel(Node):
             # Try now to init
             self._init_serving_service()
             return self._serving_ready
+
+    def get_service_address(self):
+        return self._model_server.service_address
+
+    def get_input_size(self):
+        return self._input_size
 
     def run(self,context=None):
         # TODO: find better name, since this function might initialize the container internally

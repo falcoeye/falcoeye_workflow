@@ -5,15 +5,15 @@ import requests
 
 
 
-# data = {'analysis': {'id': 'cc68cbd3-9618-44ab-ad19-797b5482ff36', 'async': True, 'args': {'filename': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/videos/cbf39036-7878-4aa3-826a-666acc04cd5a/video_original.mp4', 'sample_every': 30, 'min_score_thresh': 0.3, 'max_boxes': 30, 'prefix': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/analysis/cc68cbd3-9618-44ab-ad19-797b5482ff36/', 'frequency': 3}}, 'workflow': {'args': [{'name': 'filename', 'type': 'string', 'disc': 'filepath for video in case of streaming from video file', 'source': 'infered', 'default': None}, {'name': 'url', 'type': 'string', 'disc': 'url for camera in case of streaming server', 'source': 'infered', 'default': None}, {'name': 'resolution', 'type': 'string', 'disc': 'resolution of streaming  in case of streaming server', 'source': 'user', 'default': 'best'}, {'name': 'host', 'type': 'string', 'disc': 'host for camera in case of rtsp camera', 'source': 'infered', 'default': None}, {'name': 'port', 'type': 'string', 'disc': 'port for camera in case of rtsp camera', 'source': 'infered', 'default': None}, {'name': 'username', 'type': 'string', 'disc': 'username for camera in case of rtsp camera', 'source': 'infered', 'default': None}, {'name': 'password', 'type': 'string', 'disc': 'password for camera in case of rtsp camera', 'source': 'infered', 'default': None}, {'name': 'sample_every', 'type': 'int', 'disc': 'Sample every (seconds for stream and frame for video)', 'source': 'user', 'default': 30}, {'name': 'min_score_thresh', 'type': 'float', 'disc': 'Minimum detection confidance ([0-1])', 'source': 'user', 'default': 0.5}, {'name': 'max_boxes', 'type': 'int', 'disc': 'Maximum number of detections ([0-100])', 'source': 'user', 'default': 100}, {'name': 'length', 'type': 'float', 'disc': 'Length of streaming (seconds, -1 for entire video)', 'source': 'user', 'default': -1}, {'name': 'frequency', 'type': 'int', 'disc': 'Output frequency (every n frame)', 'source': 'user', 'default': 3}], 'nodes': [{'name': 'stream_source', 'type': 'DynamicSource', 'filename': '$filename', 'url': '$url', 'host': '$host', 'port': '$port', 'username': '$username', 'password': '$password', 'length': '$length', 'sample_every': '$sample_every', 'resolution': '$resolution'}, {'name': 'findfish_model', 'type': 'TFObjectDetectionModel', 'model_name': 'findfish', 'version': 1}, {'name': 'findfish_model_thread', 'type': 'ConcurrentPostTasksThreadWrapper', 'node': 'findfish_model', 'tcplimit': 8}, {'name': 'falcoeye_detection', 'type': 'FalcoeyeDetectionNode', 'labelmap': {'1': 'fish'}, 'min_score_thresh': '$min_score_thresh', 'max_boxes': '$max_boxes'}, {'name': 'class_counter', 'type': 'ClassCounter', 'keys': ['fish']}, {'name': 'csv_outputter', 'type': 'CSVWriter', 'xaxis': 'Timestamp', 'yaxis': 'fish', 'prefix': '$prefix'}, {'name': 'sequence_runner', 'type': 'SequenceRunner', 'frequency': '$frequency', 'nodes': ['falcoeye_detection', 'class_counter', 'csv_outputter']}], 'edges': [['stream_source', 'findfish_model_thread'], ['falcoeye_detection', 'class_counter'], ['class_counter', 'csv_outputter'], ['findfish_model_thread', 'sequence_runner']], 'starters': ['stream_source'], 'run_order': ['sequence_runner', 'findfish_model_thread', 'stream_source']}}
 data = {
     'analysis': 
     {
-        'id': '0fcd6895-9cab-43c5-a90b-fd3c0f4bf995', 
+        'id': '61564f28-a516-43b0-b5fd-36016bdf32b2', 
         'async': True, 
         'args': {
             'filename': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/videos/f703f16d-df06-4588-86f3-42d8d7346583/video_original.mp4', 
-            'prefix': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/analysis/0fcd6895-9cab-43c5-a90b-fd3c0f4bf995/', 
+            #'filename': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/videos/0bd6e99d-3bfd-4e23-94c6-81077828bb10/video_original.mp4', 
+            'prefix': 'falcoeye-bucket-test/user-assets/22689068-7c0e-45e0-8448-50d8489f051f/analysis/61564f28-a516-43b0-b5fd-36016bdf32b2/', 
             "sample_every": 1,
             "min_score_thresh": 0.40,
             "max_boxes": 30,
@@ -134,7 +134,7 @@ data = {
                 "default": 10
             },
             {
-                "name": "tcplimit",
+                "name": "ntasks",
                 "type": "int",
                 "disc": "Number of tcp process at a time",
                 "source": "user",
@@ -158,13 +158,15 @@ data = {
                 "name": "arabian_angelfish_model",
                 "type": "TFObjectDetectionModel",
                 "model_name": "arabian-angelfish",
-                "version": 1
+                "version": 1,
+                "protocol": "gRPC"
             },
             {
                 "name": "arabian_angelfish_model_thread",
-                "type": "ConcurrentPostTasksThreadWrapper",
+                "type": "ConcurrentgRPCTasksThreadWrapper",
                 "node": "arabian_angelfish_model",
-                "tcplimit": "$tcplimit"
+                "ntasks": "$ntasks",
+                "max_send_message_length": 6230000
             },
             {
                 "name": "falcoeye_detection",

@@ -7,6 +7,8 @@ import os
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
+WORKFLOWS_DIR = f"{DIR}/../../falcoeye_backend/initialization/workflows"
+
 @pytest.fixture
 def app():
     app = create_app("testing")
@@ -20,44 +22,32 @@ def client(app):
             yield client
 
 @pytest.fixture
-def fishfinder():
-    # TODO: Should come from backend
-    with open("./workflows/kaust_fish_counter.json") as f:
-        return json.load(f)
-
-@pytest.fixture
 def ta_fishfinder():
     # TODO: Should come from backend
-    with open("./workflows/kaust_fish_counter_threaded_async.json") as f:
+    with open(f"{WORKFLOWS_DIR}/kaust_fish_counter_threaded_async.json") as f:
+        return json.load(f)["structure"]
+
+@pytest.fixture
+def ta_fishfinder_grpc():
+    # TODO: Should come from backend
+    with open(f"{WORKFLOWS_DIR}/kaust_fish_counter_threaded_async_grpc.json") as f:
         return json.load(f)["structure"]
 
 
 @pytest.fixture
-def arabian_angelfish():
-    # TODO: Should come from backend
-    with open("./workflows/arabian_angelfish.json") as f:
-        return json.load(f)
-
-@pytest.fixture
-def arabian_angelfish_sequential():
-    # TODO: Should come from backend
-    with open("./workflows/arabian_angelfish_sequential.json") as f:
-        return json.load(f)
-
-@pytest.fixture
-def car_monitor():
-    # TODO: Should come from backend
-    with open(f"{DIR}/../workflows/cars_monitor.json") as f:
-        return json.load(f)
-
-@pytest.fixture
 def cars_monitor_leaky():
     # TODO: Should come from backend
-    with open(f"{DIR}/../workflows/car_monitor_leaky.json") as f:
+    with open(f"{WORKFLOWS_DIR}/car_monitor_leaky.json") as f:
         return json.load(f)
 
 @pytest.fixture
 def arabian_angelfish_monitor_leaky():
     # TODO: Should come from backend
-    with open(f"{DIR}/../workflows/arabian_angelfish_leaky.json") as f:
+    with open(f"{WORKFLOWS_DIR}/arabian_angelfish_leaky.json") as f:
+        return json.load(f)
+
+@pytest.fixture
+def arabian_angelfish_monitor_leaky_grpc():
+    # TODO: Should come from backend
+    with open(f"{WORKFLOWS_DIR}/arabian_angelfish_leaky_grpc.json") as f:
         return json.load(f)

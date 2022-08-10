@@ -57,7 +57,7 @@ class WorkflowFactory:
         # Getting nodes dictionary
         nodes_json = workflow_structure["nodes"]
         # Creating dict to escape for loop in fill args
-        workflow_args = {n["name"]: n for n in workflow_structure["args"]}
+        workflow_args = {n["name"]: n for n in workflow_structure["feeds"]["params"]}
         # replace workflow placeholders with user inputs
         fill_args(nodes_json,workflow_args,analysis["args"])
 
