@@ -1,6 +1,6 @@
 from threading import Thread
 import cv2
-import numpy
+import numpy as np
 
 from .source import Source,FalcoeyeFrame
 import logging

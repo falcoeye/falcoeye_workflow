@@ -2,6 +2,7 @@
 from app.node.node import Node
 import logging
 import cv2
+import numpy as np
 
 class Source(Node):
     def __init__(self,name,**kwargs):
@@ -20,7 +21,7 @@ class Source(Node):
 class FalcoeyeFrame:
     def __init__(self,frame,frame_number,relative_time):
         #logging.info(f"New FalcoeyeFrame {frame_number} {relative_time}")
-        self._frame = frame
+        self._frame = frame.astype(np.uint8)
         self._frame_number = frame_number
         self._relative_time = relative_time
         self._frame_bgr = cv2.cvtColor(self._frame, cv2.COLOR_RGB2BGR)

@@ -134,7 +134,7 @@ def test_leaky_arabian_angelfish_analysis(client,arabian_angelfish_monitor_leaky
             "id": "test_leaky_arabian_angelfish",
             "async": True,
             "args": {
-                "filename": "../media/arabian_angelfish_short.mp4",
+                "filename": "../../media/arabian_angelfish_short.mp4",
                 "sample_every": 1,
                 "min_score_thresh": 0.40,
                 "max_boxes": 30,
@@ -172,7 +172,7 @@ def test_leaky_arabian_angelfish_analysis_grpc(client,arabian_angelfish_monitor_
             "id": "test_leaky_arabian_angelfish",
             "async": True,
             "args": {
-                "filename": "../media/arabian_angelfish_short.mp4",
+                "filename": "../../media/arabian_angelfish_short.mp4",
                 "sample_every": 1,
                 "min_score_thresh": 0.40,
                 "max_boxes": 30,
