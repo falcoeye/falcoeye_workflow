@@ -168,8 +168,10 @@ class TFObjectDetectionModel(Node):
     def _init_serving_service(self):
         self._model_server = get_model_server(self._model_name,self._version,self._protocol)
         if self._model_server is None:
+            logging.warning(f"Model server is off or doesn't exists {self._model_name}")
             self._serving_ready = False
         else:
+            logging.info(f"Model server is on for {self._model_name}. Connection established with {type(self._model_server)}")
             self._serving_ready = True
 
     def _is_ready(self):

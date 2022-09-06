@@ -57,7 +57,7 @@ class StreamingSource(Source):
             
                 logging.info(f"New frame fetched {count} {c_time}")
                 # sinking data
-                self.sink([FalcoeyeFrame(frame,count,c_time)])
+                self.sink(FalcoeyeFrame(frame,count,c_time))
                 # sleeping for $sample_every seconds
                 count += 1
                 time.sleep(self._sample_every)

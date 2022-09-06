@@ -3,7 +3,8 @@ import logging
 from dotenv import load_dotenv
 import requests
 import logging 
-#from falcoeye_kubernetes import FalcoServingKube
+from app.utils import get_service
+from config import config_by_name
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s",
@@ -18,14 +19,13 @@ if os.path.exists(dotenv_path):
 workflow_user = os.getenv("WORKFLOW_USER")
 workflow_password = os.getenv("WORKFLOW_PASSWORD")
 
-# artifact_registry = os.getenv("ARTIFACT_REGISTRY")
-# if artifact_registry:
-#     FalcoServingKube.set_artifact_registry(artifact_registry)
 
-# backend_kube = FalcoServingKube("falcoeye-backend")
-# backend_server = backend_kube.get_service_address()
-URL = os.environ.get("BACKEND_HOST", "http://127.0.0.1:5000")
+config_name = os.getenv("FLASK_CONFIG") or "default"
+config = config_by_name[config_name]
+
+URL = get_service("falcoeye-backend",deployment=config.DEPLOYMENT,config=config)
  
+
 payload =  {
         "email": workflow_user.strip(),
         "password": workflow_password.strip()

@@ -108,13 +108,13 @@ class ConcurrentPostTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
         self.close_sinks() 
 
 class ConcurrentgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
-    
+    GRPC_MAX_RECEIVE_MESSAGE_LENGTH = 4096*4096*3
     def __init__(self,name,node,ntasks=2,max_send_message_length=6220800):
         ConcurrentRequestTaskThreadWrapper.__init__(self,name,node,ntasks)
         self._max_send_message_length = max_send_message_length
         self._options  = [
-                    ('grpc.max_send_message_length', self._max_send_message_length),
-                    ('grpc.enable_http_proxy', 0)]
+                    ('grpc.max_send_message_length', ConcurrentgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH),
+                    ('grpc.max_receive_message_length', ConcurrentgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH)]
     async def run_forever_(self,context=None):
         if context is None:
             context = current_app
@@ -127,12 +127,12 @@ class ConcurrentgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
                 async with aio.secure_channel(host, 
                     grpc.ssl_channel_credentials(), options=self._options) as channel:
                     stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
-                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks") 
+                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks in secure_channel") 
                     await self.run_session_loop_(stub)
             else:
                 async with aio.insecure_channel(host, options=self._options) as channel:
                     stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
-                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks") 
+                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks in insecure_channel") 
                     await self.run_session_loop_(stub)
             self._loop.stop()
             

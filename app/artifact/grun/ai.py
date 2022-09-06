@@ -15,20 +15,18 @@ def get_service_server(model_name,model_version,protocol,run_if_down):
 	if model_name in SERVERS:
 		return SERVERS[model_name]
 	logging.info(f"Requesting {model_name} info with protocol {protocol}")
+	sn = f"projects/{current_app.config['FS_PROJECT_ID']}/locations/{current_app.config['FS_LOCATION']}/services/falcoeye-model-{model_name}"
 	if protocol.lower() == "restful":
-		sn = f"projects/{current_app.config['FS_PROJECT_ID']}/locations/{current_app.config['FS_LOCATION']}/services/falcoeye-model-{model_name}"
 		resp = client.get_service(name=sn)
 		if "uri" in resp:
 			service_address = resp.uri
 			logging.info(f"Service uri for {model_name}: {service_address}")
 			SERVERS[model_name] = TensorflowServingRESTful(model_name,model_version,service_address)
 		else:
-			return None
-	
-	elif protocol.lower() == "grpc":    
-		sn = f"projects/{current_app.config['FS_PROJECT_ID']}/locations/{current_app.config['FS_LOCATION']}/services/falcoeye-model-{model_name}-grpc"
-		resp = client.get_service(name=sn)
+			return None	
+	elif protocol.lower() == "grpc":
 		logging.info(f"gRPC service name {sn}")
+		resp = client.get_service(name=sn)
 		if "uri" in resp:
 			service_address = resp.uri
 			service_address = service_address.replace("https://","")
@@ -37,7 +35,6 @@ def get_service_server(model_name,model_version,protocol,run_if_down):
 			SERVERS[model_name] = TensorflowServinggRPC(model_name,model_version,service_address)
 		else:
 			return None
-		
 	
 	return SERVERS[model_name]
 

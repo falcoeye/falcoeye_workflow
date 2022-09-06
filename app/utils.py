@@ -152,5 +152,19 @@ def rm_file(filename, context=None):
 	else:
 		os.remove(filename)
 		
-	
-	
+def get_service(service_name,app=None,deployment=None,config=None):
+
+	if deployment:
+		_deployment = deployment
+		if _deployment == "gcloud" or _deployment == "local":
+			return os.environ.get(config.SERVICES[service_name]["env"])
+		elif _deployment == "k8s":
+			return f"http://" + config.SERVICES[service_name]["k8s"].get_service_address()
+	else:
+		if app is None:
+			app = current_app
+		_deployment = app.config["DEPLOYMENT"]
+		if _deployment == "gcloud" or _deployment == "local":
+			return os.environ.get(app.config["SERVICES"][service_name]["env"])
+		elif _deployment == "k8s":
+			return f"http://" + app.config["SERVICES"][service_name]["k8s"].get_service_address()

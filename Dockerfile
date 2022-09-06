@@ -1,24 +1,24 @@
 FROM python:3.9-slim
 
-RUN  apt-get -yq update && \
-     apt-get -yqq install ssh
+# RUN  apt-get -yq update && \
+#      apt-get -yqq install ssh
 
-ARG SSH_KEY
-ENV SSH_KEY=$SSH_KEY
+# ARG SSH_KEY
+# ENV SSH_KEY=$SSH_KEY
 
-# Make ssh dir
-RUN mkdir /root/.ssh/
+# # Make ssh dir
+# RUN mkdir /root/.ssh/
  
-# Create id_rsa from string arg, and set permissions
+# # Create id_rsa from string arg, and set permissions
 
-RUN echo "$SSH_KEY" > /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa
+# RUN echo "$SSH_KEY" > /root/.ssh/id_rsa
+# RUN chmod 600 /root/.ssh/id_rsa
  
-# Create known_hosts
-RUN touch /root/.ssh/known_hosts
+# # Create known_hosts
+# RUN touch /root/.ssh/known_hosts
 
 # Add git providers to known_hosts
-RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+# RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 MAINTAINER "falcoeye team"
 

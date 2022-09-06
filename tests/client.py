@@ -23,28 +23,30 @@ from grpc import aio
 N=1
 
 #url = "http://localhost:8501/v1/models/arabian_angelfish:predict"
- 
+MODEL_NAME ="cocoobjects" 
 
-img = Image.open("../media/fish2.jpg")
+img = Image.open("../../media/fish2.jpg")
 width, height = img.size
-img = img.resize((width//2, height//2))
+#img = img.resize((width//2, height//2))
 img = np.asarray(img).astype(np.uint8)
 instance = np.expand_dims(img, axis=0) 
 data = json.dumps({"signature_name": "serving_default", "instances": instance.tolist()})
-
-GRPC_MAX_RECEIVE_MESSAGE_LENGTH = width*height*3
+print(img.nbytes)
+GRPC_MAX_RECEIVE_MESSAGE_LENGTH = 4096*4096*3
 options = [
         ('grpc.max_send_message_length', GRPC_MAX_RECEIVE_MESSAGE_LENGTH),
+        ('grpc.max_receive_message_length', GRPC_MAX_RECEIVE_MESSAGE_LENGTH),
         ('grpc.enable_http_proxy', 0),
 ]
 
 async def post(session: aiohttp.ClientSession,pid:int):
     try:
-        url = "https://falcoeye-model-arabian-angelfish-xbjr6s7buq-uc.a.run.app/v1/models/arabian-angelfish:predict"
-        #url = "http://localhost:8501/v1/models/arabian_angelfish:predict"
+        #url = "https://falcoeye-model-arabian-angelfish-xbjr6s7buq-uc.a.run.app/v1/models/arabian-angelfish:predict"
+        url = f"http://localhost:8501/v1/models/{MODEL_NAME}:predict"
         headers = {"content-type": "application/json"}  
         print(f"Running {pid}")
         start_time = time.time()
+        #print(data)
         response = await session.request("POST",url,headers=headers,data=data)
         responseText = await response.text()
         #print(responseText)
@@ -72,7 +74,7 @@ async def post_grpc(pid,stub):
         start_time = time.time()
         print(f"Running {pid}")
         request = predict_pb2.PredictRequest()
-        request.model_spec.name = 'arabian-angelfish'
+        request.model_spec.name = MODEL_NAME
 
         # specify the serving signature from the model
         request.model_spec.signature_name = 'serving_default'

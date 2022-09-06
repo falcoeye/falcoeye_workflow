@@ -12,6 +12,17 @@ class Config:
 
     # file system interface
     FS_PROTOCOL = os.environ.get("FS_PROTOCOL", "file")
+    DEPLOYMENT = os.environ.get("DEPLOYMENT","local")
+
+    SERVICES = {
+        "falcoeye-backend": {
+            "env": "BACKEND_HOST",
+            "k8s": None
+        }
+    }
+    if DEPLOYMENT == "k8s":
+        from app.artifact.k8s import FalcoServingKube
+        SERVICES["falcoeye-backend"]["k8s"] = FalcoServingKube("falcoeye-backend")
     
 
     if FS_PROTOCOL in ("gs", "gcs"):

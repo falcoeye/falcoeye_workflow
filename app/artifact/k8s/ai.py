@@ -1,59 +1,160 @@
 import json
 import requests
-from falcoeye_kubernetes import FalcoServingKube
+from .core import FalcoServingKube
 from flask import current_app
 import logging
+from tensorflow_serving.apis import predict_pb2
+import numpy as np
+import tensorflow as tf
+import time
+CALLED_SERVER = {}
 
-def get_service_address(kube):
-    logging.info("getting service address")
-    if current_app.config.get("TESTING"):
-        return kube.get_service_address(external=True,hostname=True)
-    else:
-        return kube.get_service_address()
+def get_service_server(model_name,model_version,protocol,run_if_down):
+	logging.info("getting service address")
+	if model_name in CALLED_SERVER and CALLED_SERVER[model_name].is_running():
+		return CALLED_SERVER[model_name]
+	elif run_if_down:
+	   logging.info(f"Starting container for {model_name}") 
+	   server = start_tfserving(model_name,model_version,protocol)
+	   CALLED_SERVER[model_name] = server
+	   return server
+	else:
+		logging.error(f"Couldn't find running container for {model_name}")
+		return None
 
-def start_tfserving_container(model_name, model_version):
-    kube = FalcoServingKube(model_name)
-    started = kube.start() and kube.is_running()
-    logging.info(f"kube started for {model_name}?: {started}")
-    if started:
-        service_address = get_service_address(kube)
-        logging.info(f"New container for {model_name} started")
-        return TensorflowServingContainer(model_name,model_version,service_address,kube)
-    else:
-        logging.error(f"Couldn't start container for {model_name}")
-        return None
+def start_tfserving(model_name, model_version,protocol):
+	if protocol.lower() == "restful":
+		kube = FalcoServingKube(model_name,port=8501)
+	elif protocol.lower() == "grpc":	
+		kube = FalcoServingKube(model_name,port=8500)
+		
+	started = kube.start() and kube.is_running()
+	logging.info(f"kube started for {model_name}?: {started}")
+	if started:
+		logging.info(f"New container for {model_name} started")
+		logging.info(f"Waiting for container for {model_name} to load model")
+		count = 60
+		while not kube.is_ready() and count > 0:
+			time.sleep(3)
+			count -= 1
 
-class TensorflowServingContainer:
-    def __init__(self,
-        model_name,
-        model_version,
-        service_address,
-        kube):
-        self._name = model_name
-        self._version = model_version
-        self._kube = kube
-        self._predict_url = f"http://{service_address}/v{model_version}/models/{model_name}:predict"
-        logging.info(f"New tensorflow serving container initialized for {model_name} on {service_address}")
+		if not kube.is_ready():
+			kube.delete_deployment()
+			kube.delete_service()
+			logging.info(f"Failed to launch the kube for {model_name} for 3 minutes")
+			return None
 
-    def post(self,frame):
-        # TODO: what if kube is not running?
-        data = json.dumps({"signature_name": "serving_default", "instances": [frame.tolist()]})
-        headers = {"content-type": "application/json"}
-        response = requests.post(self._predict_url, data=data, headers=headers)
-        predictions = json.loads(response.text)['predictions'][0]
-        return predictions
 
-    async def post_async(self,session,frame):
-        try:
-            # TODO: what if kube is not running?     
-            data = json.dumps({"signature_name": "serving_default", "instances": [frame.tolist()]})
-            headers = {"content-type": "application/json"}
-            logging.info(f"Posting new frame asynchronously {self._predict_url}")
-            async with session.post(self._predict_url,data=data,headers=headers) as response:
-                logging.info("Prediction received")
-                responseText = await response.text()
-                predictions = json.loads(responseText)['predictions'][0]
-                return predictions
-        except Exception as e:
-            raise
-            logging.error(e)
+		logging.info(f"Container for {model_name} is ready to serve")
+		if current_app.config.get("TESTING"):
+			service_address =  kube.get_service_address(external=True,hostname=True)
+		else:
+			service_address = kube.get_service_address()
+
+
+		if protocol.lower() == "restful":
+			tfserver = TensorflowServingRESTFul(model_name,model_version,service_address,kube)
+		elif protocol.lower() == "grpc":	
+			tfserver = TensorflowServinggRPC(model_name,model_version,service_address,kube)
+		return tfserver
+	else:
+		logging.error(f"Couldn't start container for {model_name}")
+		return None
+
+class TensorflowServing:
+	def __init__(self,
+		model_name,
+		model_version,
+		service_address,
+		kube):
+		self._name = model_name
+		self._version = model_version
+		self._kube = kube
+		self._service_address = service_address
+		logging.info(f"New tensorflow serving container initialized for {model_name} on {service_address}")
+
+	@property
+	def service_address(self):
+		return self._service_address
+
+	def post(self):
+		raise NotImplementedError
+	
+	async def post_async(self,session,frame):
+		raise NotImplementedError
+	
+	def is_running(self):
+		return self._kube.is_running()
+
+class TensorflowServingRESTFul(TensorflowServing):
+	def __init__(self,
+		model_name,
+		model_version,
+		service_address,
+		kube):
+		TensorflowServing.__init__(self,model_name,
+			model_version,service_address,kube)
+		self._predict_url = f"{service_address}/v{model_version}/models/{model_name}:predict"
+		logging.info(f"New RESTful tensorflow serving initialized for {model_name} on {service_address} {self._predict_url}")
+
+	def post(self,frame):
+		data = json.dumps({"signature_name": "serving_default", "instances": [frame.tolist()]})
+		headers = {"content-type": "application/json"}
+		response = requests.post(self._predict_url, data=data, headers=headers)
+		detections = json.loads(response.text)['predictions'][0]
+		return detections
+
+	async def post_async(self,session,frame):
+		try:
+			data = json.dumps({"signature_name": "serving_default", "instances": [frame.tolist()]})
+			headers = {"content-type": "application/json"}
+			logging.info(f"Posting new frame asynchronously {self._predict_url}")
+			async with session.post(self._predict_url,data=data,headers=headers) as response:
+				responseText = await response.text()
+				logging.info("Prediction received")
+				detections = json.loads(responseText)['predictions'][0]
+				return detections
+		except Exception as e:
+			raise
+			logging.error(e)
+
+class TensorflowServinggRPC(TensorflowServing):
+	def __init__(self,
+		model_name,
+		model_version,
+		service_address,
+		kube):
+		TensorflowServing.__init__(self,model_name,
+			model_version,service_address,kube)
+		
+		logging.info(f"New gRPC tensorflow serving initialized for {model_name} on {service_address}")
+
+	def post(self,frame):
+		raise NotImplementedError
+			
+	async def post_async(self,stub,frame):
+		try:
+			logging.info(f"Posting new frame asynchronously to gRPC")
+			request = predict_pb2.PredictRequest()
+			logging.info(f"Request to gRPC created {self._name}")
+			request.model_spec.name = self._name
+			request.model_spec.signature_name = 'serving_default'
+			logging.info(f"Expanding frame")
+			frame = np.expand_dims(frame, axis=0) 
+			request.inputs['input_tensor'].CopyFrom(tf.make_tensor_proto(frame))
+			logging.info(f"Predicting")
+			result = await stub.Predict(request)
+			logging.info("Prediction received")
+			# To match resful response
+			boxes = np.array(result.outputs['detection_boxes'].float_val).reshape((-1,4)).tolist()
+			classes = result.outputs['detection_classes'].float_val
+			scores = result.outputs['detection_scores'].float_val
+			detections = {'detection_boxes': boxes,
+				'detection_classes':classes,
+				'detection_scores': scores}
+			return detections
+		except Exception as e:
+			logging.error(e)
+			return {'detection_boxes': np.array([]),
+				'detection_classes':np.array([]),
+				'detection_scores': np.array([])}
