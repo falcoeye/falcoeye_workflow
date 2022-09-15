@@ -8,9 +8,14 @@ import kubernetes
 
 logger = logging.getLogger(__name__)
 
-SERVING_TEMPLATE = os.path.join(
-    os.path.dirname(__file__), "resources/tf-serving-template.yml"
-)
+SERVING_TEMPLATE = {
+    "tf":os.path.join(
+        os.path.dirname(__file__), "resources/tf-serving-template.yml"
+    ),
+    "torch":os.path.join(
+        os.path.dirname(__file__), "resources/torch-serving-template.yml"
+    )
+}
 
 
 def skip_if_already_exists(e):
@@ -21,46 +26,46 @@ def skip_if_already_exists(e):
         logger.debug(e)
         return False
 
-
 class FalcoServingKube:
     ARTIFACT_REGISTRY = None
     def __init__(
         self,
         name,
-        template=None,
+        template_type=None,
         image=None,
         replicas=1,
         port=8501,
         namespace="default",
+        ready_message="Entering the event loop" 
     ):
         self.name = name
         self.service_name = self.name+"-svc"
         self.base_name = name.split("/")[-1]
-        self.template = template
+        self.template_type = template_type
         self.image = image
         self.replicas = replicas
         self.port = port
         self.namespace = namespace
+        self.ready_message = ready_message
 
         if not self.name:
             raise RuntimeError("name should not be empty")
-
-        self.template = list(self._get_deployment_template())
+        self.template = self._get_deployment_template()
+   
         try:
             config.load_kube_config()
         except:
             config.load_incluster_config()
 
     def _get_deployment_template(self):
-        if not self.template:
-            with open(SERVING_TEMPLATE) as f:
+        
+        if self.template_type is None:
+            return None
+
+        if isinstance(self.template_type, str) and self.template_type in SERVING_TEMPLATE:
+            with open(SERVING_TEMPLATE[self.template_type]) as f:
                 template = self._fill_deployment_template(f.read())
-                template = yaml.safe_load_all(template)
-
-        elif isinstance(self.template, str):
-            with open(self.template) as f:
-                template = yaml.safe_load_all(f)
-
+                template = list(yaml.safe_load_all(template))
         else:
             raise NotImplementedError(
                 f"parsing template of type {type(self.template)} is not implemented yet"
@@ -98,9 +103,11 @@ class FalcoServingKube:
                 return skip_if_already_exists(e)
 
         return True
+    
     def is_ready(self):
         logs = self.get_logs()
-        return logs and "Entering the event loop" in logs
+        return logs and self.ready_message in logs
+    
     def delete_deployment(self):
         api = client.AppsV1Api()
         try:
@@ -190,10 +197,6 @@ class FalcoServingKube:
         except kubernetes.client.exceptions.ApiException as e:
             return None
         
-
-
-
-
     @staticmethod
     def set_artifact_registry(registry):
         if registry[-1] == "/":

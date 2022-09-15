@@ -1,12 +1,10 @@
 
 from app.node.node import Node
-from app.artifact import get_model_server
 import json
 import logging
 import numpy as np
 from .utils import get_color_from_number
 from PIL import Image
-import cv2
 
 
 class FalcoeyeDetection:
@@ -142,83 +140,30 @@ class FalcoeyeDetectionNode(Node):
         while self.more():
             item = self.get()
             frame,raw_detections = item
-            logging.info(f"New frame for falcoeye detection  {frame.framestamp} {frame.timestamp}")
-            detections, category_map = self.translate(raw_detections)
-            fe_detection = FalcoeyeDetection(frame,detections, 
-                    category_map)
-            self.sink(fe_detection)
+            try:
+                if type(raw_detections) == dict and "prediction" in raw_detections:
+                    # restful
+                    raw_detections = ['predictions'][0]
+                elif raw_detections is None:
+                    # TODO: should do failover
+                    raw_detections = {'detection_boxes': np.array([]),
+                    'detection_classes':np.array([]),
+                    'detection_scores': np.array([])}
+                else:
+                    # gRPC response
+                    logging.info("gRPC detection")
+                    boxes = np.array(raw_detections.outputs['detection_boxes'].float_val).reshape((-1,4)).tolist()
+                    classes = raw_detections.outputs['detection_classes'].float_val
+                    scores = raw_detections.outputs['detection_scores'].float_val
+                    raw_detections = {'detection_boxes': boxes,
+                        'detection_classes':classes,
+                        'detection_scores': scores}
+                
+                logging.info(f"New frame for falcoeye detection  {frame.framestamp} {frame.timestamp}")
+                detections, category_map = self.translate(raw_detections)
+                fe_detection = FalcoeyeDetection(frame,detections, 
+                        category_map)
+                self.sink(fe_detection)
+            except Exception as e:
+                logging.error(e)
     
-class TFObjectDetectionModel(Node):
-    
-    def __init__(self, name,
-        model_name,
-        version,
-        protocol="gRPC"
-        ):
-        Node.__init__(self,name)
-        self._model_name = model_name
-        self._version = version
-        self._model_server = None
-        self._protocol = protocol
-        
-        self._init_serving_service()
-        if not self._serving_ready:
-            logging.warning(f"Model server is off or doesn't exists {model_name}")
-
-    def _init_serving_service(self):
-        self._model_server = get_model_server(self._model_name,self._version,self._protocol)
-        if self._model_server is None:
-            logging.warning(f"Model server is off or doesn't exists {self._model_name}")
-            self._serving_ready = False
-        else:
-            logging.info(f"Model server is on for {self._model_name}. Connection established with {type(self._model_server)}")
-            self._serving_ready = True
-
-    def _is_ready(self):
-        if self._serving_ready:
-            return True
-        else:
-            # Try now to init
-            self._init_serving_service()
-            return self._serving_ready
-
-    def get_service_address(self):
-        return self._model_server.service_address
-
-    def get_input_size(self):
-        return self._input_size
-
-    def run(self,context=None):
-        # TODO: find better name, since this function might initialize the container internally
-        if not self._is_ready:
-            return
-             
-        logging.info(f'Predicting {self._data.qsize()} frames')
-        while self.more():
-            item = self.get()
-            
-            logging.info(f"New frame to post to container {item.framestamp} {item.timestamp} {item.frame.shape}")
-            raw_detections =  self._model_server.post(item.frame)
-            logging.info(f"Prediction received {item.framestamp}")
-            self.sink([item,raw_detections])
-        
-        logging.info(f"{self._name} completed")
-
-    async def run_on_async(self,session,item):
-        if not self._is_ready():
-            return
-        #init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  await self._model_server.post_async(session,item.frame)
-        logging.info(f"Prediction received {item.framestamp}")
-        return [item,raw_detections]
-    
-    def run_on(self,item):
-        if not self._is_ready():
-            return
-        #init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  self._model_server.post(item.frame)
-        logging.info(f"Prediction received {item.framestamp}")
-        return [item,raw_detections]
-       

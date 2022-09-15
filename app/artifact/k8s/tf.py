@@ -7,26 +7,15 @@ from tensorflow_serving.apis import predict_pb2
 import numpy as np
 import tensorflow as tf
 import time
+
 CALLED_SERVER = {}
 
-def get_service_server(model_name,model_version,protocol,run_if_down):
-	logging.info("getting service address")
-	if model_name in CALLED_SERVER and CALLED_SERVER[model_name].is_running():
-		return CALLED_SERVER[model_name]
-	elif run_if_down:
-	   logging.info(f"Starting container for {model_name}") 
-	   server = start_tfserving(model_name,model_version,protocol)
-	   CALLED_SERVER[model_name] = server
-	   return server
-	else:
-		logging.error(f"Couldn't find running container for {model_name}")
-		return None
 
 def start_tfserving(model_name, model_version,protocol):
 	if protocol.lower() == "restful":
-		kube = FalcoServingKube(model_name,port=8501)
+		kube = FalcoServingKube(model_name,port=8501,template_type="tf")
 	elif protocol.lower() == "grpc":	
-		kube = FalcoServingKube(model_name,port=8500)
+		kube = FalcoServingKube(model_name,port=8500,template_type="tf")
 		
 	started = kube.start() and kube.is_running()
 	logging.info(f"kube started for {model_name}?: {started}")
@@ -112,7 +101,7 @@ class TensorflowServingRESTFul(TensorflowServing):
 			async with session.post(self._predict_url,data=data,headers=headers) as response:
 				responseText = await response.text()
 				logging.info("Prediction received")
-				detections = json.loads(responseText)['predictions'][0]
+				detections = json.loads(responseText)
 				return detections
 		except Exception as e:
 			raise
@@ -145,16 +134,8 @@ class TensorflowServinggRPC(TensorflowServing):
 			logging.info(f"Predicting")
 			result = await stub.Predict(request)
 			logging.info("Prediction received")
-			# To match resful response
-			boxes = np.array(result.outputs['detection_boxes'].float_val).reshape((-1,4)).tolist()
-			classes = result.outputs['detection_classes'].float_val
-			scores = result.outputs['detection_scores'].float_val
-			detections = {'detection_boxes': boxes,
-				'detection_classes':classes,
-				'detection_scores': scores}
-			return detections
+			
+			return result
 		except Exception as e:
 			logging.error(e)
-			return {'detection_boxes': np.array([]),
-				'detection_classes':np.array([]),
-				'detection_scores': np.array([])}
+			return None

@@ -152,7 +152,6 @@ class StreamingServerSource(StreamingSource):
             logging.error("Couldn't fetch frame")
             return False,None
         
-
 class AngelCamSource(StreamingServerSource):
     resolutions = {"best": {"width": 1920, "height": 1080}}
 

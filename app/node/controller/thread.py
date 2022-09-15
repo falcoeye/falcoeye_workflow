@@ -6,7 +6,7 @@ from flask import current_app
 import asyncio
 from grpc import aio
 import grpc
-from tensorflow_serving.apis import prediction_service_pb2_grpc
+
 
 class ThreadWrapper(Node):
     def __init__(self,name,node):
@@ -51,6 +51,7 @@ class ConcurrentRequestTaskThreadWrapper(Node):
         loop.run_forever()
 
     def run_async(self,done_callback,error_callback):
+        logging.info(f"Running {self.name} asyncronously")
         self._done_callback = done_callback
         self._error_callback = error_callback
         self._continue = True
@@ -62,7 +63,7 @@ class ConcurrentRequestTaskThreadWrapper(Node):
         asyncio.run_coroutine_threadsafe(self.run_forever_(), self._loop)
  
     def run_forever_(self):
-        raise NotImplementedError
+        logging.error("Not implemented")
 
     async def run_session_loop_(self,session):
         try:
@@ -107,38 +108,3 @@ class ConcurrentPostTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
             self._done_callback(self._name)
         self.close_sinks() 
 
-class ConcurrentgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
-    GRPC_MAX_RECEIVE_MESSAGE_LENGTH = 4096*4096*3
-    def __init__(self,name,node,ntasks=2,max_send_message_length=6220800):
-        ConcurrentRequestTaskThreadWrapper.__init__(self,name,node,ntasks)
-        self._max_send_message_length = max_send_message_length
-        self._options  = [
-                    ('grpc.max_send_message_length', ConcurrentgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH),
-                    ('grpc.max_receive_message_length', ConcurrentgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH)]
-    async def run_forever_(self,context=None):
-        if context is None:
-            context = current_app
-
-        try:
-            host = self._node.get_service_address()
-            
-            logging.info(f"Starting concurrent gRPC looping for {self.name} on {host}")  
-            if context.config["FS_IS_REMOTE"]:
-                async with aio.secure_channel(host, 
-                    grpc.ssl_channel_credentials(), options=self._options) as channel:
-                    stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
-                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks in secure_channel") 
-                    await self.run_session_loop_(stub)
-            else:
-                async with aio.insecure_channel(host, options=self._options) as channel:
-                    stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
-                    logging.info(f"Starting stub looping for {self.name} with {self._ntasks} tasks in insecure_channel") 
-                    await self.run_session_loop_(stub)
-            self._loop.stop()
-            
-            logging.info(f"Loop {self.name} inturrepted. Flushing queue")
-            if self._done_callback:
-                self._done_callback(self._name)  
-            self.close_sinks() 
-        except Exception as e:
-            logging.error(e)
