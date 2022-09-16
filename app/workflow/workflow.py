@@ -3,6 +3,42 @@ from app.node import create_node_from_dict,Source
 import logging 
 import threading
 from flask import current_app
+from app.utils import get_service,message as ResponseMessage
+import requests
+import json
+import os
+
+def post_new_status(context,aid,status,msg):
+    try:
+        resp = { "status": status }
+        resp["message"] = msg
+        
+        backend_server = get_service("falcoeye-backend",app=context)
+        postback_url = f"{backend_server}/api/analysis/{aid}"
+        logging.info(f"Posting new status {status} to backend {postback_url}")
+        rv = requests.put(
+            postback_url,
+            data=json.dumps(resp),
+            headers={"Content-type": "application/json","X-API-KEY":os.environ.get("JWT_KEY")},
+        )
+        if rv.headers["content-type"].strip().startswith("application/json"):
+            logging.info(f"Response received {rv.json()}")
+
+        else:
+            logging.info(f"Request might have failed. No json response received")
+
+    except requests.exceptions.ConnectionError:
+        logging.error(
+            f"Warning: failed to inform backend server ({backend_server}) for change in the status "
+        )
+    except requests.exceptions.Timeout:
+        logging.error(
+            f"Warning: failed to inform backend server ({backend_server}) for change in the status "
+        )
+    except requests.exceptions.HTTPError:
+        logging.error(
+            f"Warning: failed to inform backend server ({backend_server}) for change in the status "
+        )
 
 class Workflow:
     def __init__(self,analysis_id,nodes,starters,nodes_in_order):
@@ -28,7 +64,8 @@ class Workflow:
         self._tasks = {}
         for n in self._nodes_in_order:
             print(n.name)
-            self._tasks[n.name] = True
+            # TODO: rename or do something, looks ugly
+            self._tasks[n.name] = {"done":False,"noerror":True,"message": None}
             logging.info(f"Running {n._name}")   
             n.run_async(self.done_task_callback,self.error_task_callback)
 
@@ -36,13 +73,24 @@ class Workflow:
 
     def done_task_callback(self,task):
         logging.info(f"Received done callback from {task}")
-        self._tasks[task] = False
-        if all(self._tasks.values()):
-            # TODO update db
-            pass
+        
+        self._tasks[task]["done"] = True
+        done_all = all([a["done"] for _,a in self._tasks.items()])
+        logging.info(f"Closed all tasks? {done_all}")
+        if done_all:
+            aid = self._analysis_id
+            # TODO: fix the context thing
+            if all([a["noerror"] for _,a in self._tasks.items()]):
+                post_new_status(self._nodes[task].context,aid,"Completed","workflow completed") 
+            else:
+                message = "\n".join([a["message"] for _,a in self._tasks.items() if a["message"]])
+                post_new_status(self._nodes[task].context,aid,"Error",message) 
     
     def error_task_callback(self,task,error):
         logging.error(error)
+        self._tasks[task]["noerror"] = False
+        # TODO: handle this differently
+        self.done_task_callback(task)
 
     def status(self):
         return self._tasks

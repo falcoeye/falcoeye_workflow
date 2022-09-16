@@ -67,8 +67,7 @@ class SequenceRunner(Node):
                 self.run_()
             logging.info(f"Sequence {self.name} loop exited")
             self._counter = 0
-            if self._done_callback:
-                self._done_callback(self._name)
+
             
             # closing the nodes (i.e. setting continue to False)
             self.close_nodes()
@@ -77,7 +76,11 @@ class SequenceRunner(Node):
             logging.info("Flushing nodes after closing.")
             for n in self._nodes:
                 logging.info(f"Runing node {n.name}")
-                n.run()  
+                n.run() 
+            
+            if self._done_callback:
+                self._done_callback(self._name)
+
         except Exception as e:
             logging.error(e)
     
