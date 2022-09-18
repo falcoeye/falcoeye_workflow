@@ -180,11 +180,13 @@ class InferenceAPIsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
 
-def start_torchserving(model_name, model_version,protocol):
+def start_torchserving(model_name, model_version,port,protocol):
+        
+	logging.info(f"Starting torch serving on port {port} using {protocol} protocol")
 	if protocol.lower() == "restful":
-		kube = FalcoServingKube(model_name,port=8505,template_type="torch",ready_message="WORKER_MODEL_LOADED")
+		kube = FalcoServingKube(model_name,port=port,targetport=8505,template_type="torch",ready_message="WORKER_MODEL_LOADED")
 	elif protocol.lower() == "grpc":	
-		kube = FalcoServingKube(model_name,port=8508,template_type="torch",ready_message="WORKER_MODEL_LOADED")
+		kube = FalcoServingKube(model_name,port=port,targetport=8508,template_type="torch",ready_message="WORKER_MODEL_LOADED")
 		
 	started = kube.start() and kube.is_running()
 	logging.info(f"kube started for {model_name}?: {started}")

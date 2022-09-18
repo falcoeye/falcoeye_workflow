@@ -35,6 +35,7 @@ class FalcoServingKube:
         image=None,
         replicas=1,
         port=8501,
+        targetport=8501,
         namespace="default",
         ready_message="Entering the event loop" 
     ):
@@ -45,8 +46,10 @@ class FalcoServingKube:
         self.image = image
         self.replicas = replicas
         self.port = port
+        self.targetport = targetport
         self.namespace = namespace
         self.ready_message = ready_message
+
 
         if not self.name:
             raise RuntimeError("name should not be empty")
@@ -77,6 +80,7 @@ class FalcoServingKube:
         template = template.replace("$appname", self.name)
         template = template.replace("$replicas", str(self.replicas))
         template = template.replace("$port", str(self.port))
+        template = template.replace("$targetport", str(self.targetport))
         
         # @jalalirs: create it if None but don't set it (i.e. self.image=...)
         # I don't like setting object attributes inside operation functions
@@ -203,5 +207,12 @@ class FalcoServingKube:
             registry = registry[:-1]
         FalcoServingKube.ARTIFACT_REGISTRY = registry
 
+    @staticmethod
+    def is_port_taken(port,namespace="default"):
+        v1 = client.CoreV1Api()
+        resp = v1.list_namespaced_service(namespace=namespace)
+        ports = list(set([i.spec.ports[0].port for i in resp.items]))
+        return port in ports
+        
     def scale(self, n):
         pass

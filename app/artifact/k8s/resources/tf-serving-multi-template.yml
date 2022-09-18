@@ -15,10 +15,12 @@ spec:
       containers:
         - env:
           name: $appname
-          image: $image
+          image: tf-models
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: $port
+          args:
+            - "--model_config_file=/models/models.config"
 ---
 apiVersion: v1
 kind: Service
@@ -29,7 +31,7 @@ metadata:
 spec:
   ports:
   - port: $port
-    targetPort: $targetport
+    targetPort: $port
   selector:
     app: $appname
   type: LoadBalancer

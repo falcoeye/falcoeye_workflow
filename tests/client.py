@@ -69,12 +69,16 @@ async def main():
         # loop over asyncio.as_completed()
         await asyncio.gather(*tasks, return_exceptions=True)
 
-async def post_grpc(pid,stub):
+async def post_grpc(pid,stub,model=None):
     try:
         start_time = time.time()
-        print(f"Running {pid}")
+        
         request = predict_pb2.PredictRequest()
-        request.model_spec.name = MODEL_NAME
+        if not model:
+            model = MODEL_NAME
+        
+        print(f"Running {pid} {model}")
+        request.model_spec.name = model
 
         # specify the serving signature from the model
         request.model_spec.signature_name = 'serving_default'
@@ -106,11 +110,27 @@ async def main_grpc():
             tasks.append(asyncio.create_task(post_grpc(pid=i,stub=stub)))
         await asyncio.gather(*tasks, return_exceptions=True)
 
-start_time = time.time()
-asyncio.run(main_grpc())
-grpctime = time.time() - start_time
+async def main_multiple_grpc():
+    models = ["findfish","cocoobjects","arabian-angelfish"]
+    tasks = []
+    host = "falcoeye-model-arabian-angelfish-grpc-xbjr6s7buq-uc.a.run.app:443"
+    host = "localhost:8500"
+    async with aio.insecure_channel(host, options=options) as channel:
+    #async with aio.secure_channel(host, grpc.ssl_channel_credentials(), options=options) as channel:
+        stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
+        for m in models:
+            for i in range(N):
+                tasks.append(asyncio.create_task(post_grpc(pid=i,stub=stub,model=m)))
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-print(f"Done grpc")
+# start_time = time.time()
+# asyncio.run(main_grpc())
+# grpctime = time.time() - start_time
+
+start_time = time.time()
+asyncio.run(main_multiple_grpc())
+grpctime = time.time() - start_time
+print(f"GRPC Time {grpctime} ")
 
 # start_time = time.time()
 # asyncio.run(main())

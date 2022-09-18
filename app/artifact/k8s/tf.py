@@ -8,14 +8,13 @@ import numpy as np
 import tensorflow as tf
 import time
 
-CALLED_SERVER = {}
 
-
-def start_tfserving(model_name, model_version,protocol):
+def start_tfserving(model_name, model_version,port,protocol):
+	logging.info(f"Starting tensorflow serving on port {port} using {protocol} protocol")
 	if protocol.lower() == "restful":
-		kube = FalcoServingKube(model_name,port=8501,template_type="tf")
+		kube = FalcoServingKube(model_name,port=port,targetport=8501,template_type="tf")
 	elif protocol.lower() == "grpc":	
-		kube = FalcoServingKube(model_name,port=8500,template_type="tf")
+		kube = FalcoServingKube(model_name,port=port,targetport=8500,template_type="tf")
 		
 	started = kube.start() and kube.is_running()
 	logging.info(f"kube started for {model_name}?: {started}")

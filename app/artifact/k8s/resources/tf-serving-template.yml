@@ -31,7 +31,7 @@ metadata:
 spec:
   ports:
   - port: $port
-    targetPort: $port
+    targetPort: $targetport
   selector:
     app: $appname
   type: LoadBalancer
