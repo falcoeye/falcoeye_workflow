@@ -136,9 +136,13 @@ class FalcoeyeDetectionNode(Node):
         return _detections, _category_map
 
     def run(self,context=None):
+        """
+        Safe node: the input is assumed to be valid or can be handled properly, no need to catch
+        """
         logging.info(f"Running falcoeye detection")
         while self.more():
             item = self.get()
+
             frame,raw_detections = item
             try:
                 if type(raw_detections) == dict and "prediction" in raw_detections:

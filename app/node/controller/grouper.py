@@ -42,6 +42,9 @@ class SequenceRunner(Node):
             n.run()  
           
     def run_forever_(self,context=None):
+        """
+        Critical node: failure here should cause the workflow to fail
+        """
         try:
             logging.info(f"Running forever for {self.name}")
             if context is None:
@@ -83,6 +86,7 @@ class SequenceRunner(Node):
 
         except Exception as e:
             logging.error(e)
+            self._error_callback(self._name,str(e))
     
     def open_nodes(self):
         for node in self._nodes:
@@ -93,8 +97,10 @@ class SequenceRunner(Node):
             node.close() 
 
     def run_async(self,done_callback,error_callback):
+        # TODO: do we need try/except here?!
         logging.info(f"Running {self.name} async in {self.context} context")
         self._done_callback = done_callback
+        self._error_callback = error_callback
         self._continue = True
         self._thread = Thread(target=self.run_forever_, kwargs={"context":self.context},daemon=True)
         self._thread.start()
@@ -107,6 +113,9 @@ class SortedSequence(Node):
         self._expected_start = 0
     
     def run(self,context=None):
+        """
+        Safe node: input is assumed to be valid
+        """
         logging.info(f"Running SortedSequence {self._name}")
         while self.more():
             if self._data.queue[0] == self._expected_start:

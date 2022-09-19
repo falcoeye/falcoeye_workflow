@@ -16,6 +16,9 @@ class ConcurrentTFgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
                     ('grpc.max_send_message_length', ConcurrentTFgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH),
                     ('grpc.max_receive_message_length', ConcurrentTFgRPCTasksThreadWrapper.GRPC_MAX_RECEIVE_MESSAGE_LENGTH)]
     async def run_forever_(self,context=None):
+        """
+        Critical node: failure here should cause the workflow to fail
+        """
         if context is None:
             context = current_app
 
@@ -42,3 +45,4 @@ class ConcurrentTFgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
             self.close_sinks() 
         except Exception as e:
             logging.error(e)
+            self._error_callback(self._name,str(e))

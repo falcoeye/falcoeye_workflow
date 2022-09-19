@@ -17,6 +17,9 @@ class ConcurrentTorchgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
 
         
     async def run_forever_(self,context=None):
+        """
+        Critical node: failure here should cause the workflow to fail
+        """
         if context is None:
             context = current_app
 
@@ -42,3 +45,4 @@ class ConcurrentTorchgRPCTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
             self.close_sinks() 
         except Exception as e:
             logging.error(e)
+            self._error_callback(self._name,str(e))

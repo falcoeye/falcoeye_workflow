@@ -37,7 +37,8 @@ class FalcoServingKube:
         port=8501,
         targetport=8501,
         namespace="default",
-        ready_message="Entering the event loop" 
+        ready_message=None,
+        error_message=None
     ):
         self.name = name
         self.service_name = self.name+"-svc"
@@ -49,6 +50,7 @@ class FalcoServingKube:
         self.targetport = targetport
         self.namespace = namespace
         self.ready_message = ready_message
+        self.error_message = error_message
 
 
         if not self.name:
@@ -111,6 +113,10 @@ class FalcoServingKube:
     def is_ready(self):
         logs = self.get_logs()
         return logs and self.ready_message in logs
+    
+    def did_fail(self):
+        logs = self.get_logs()
+        return logs and (self.error_message and self.error_message in logs)
     
     def delete_deployment(self):
         api = client.AppsV1Api()
@@ -213,6 +219,6 @@ class FalcoServingKube:
         resp = v1.list_namespaced_service(namespace=namespace)
         ports = list(set([i.spec.ports[0].port for i in resp.items]))
         return port in ports
-        
+
     def scale(self, n):
         pass

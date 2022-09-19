@@ -12,21 +12,27 @@ import time
 def start_tfserving(model_name, model_version,port,protocol):
 	logging.info(f"Starting tensorflow serving on port {port} using {protocol} protocol")
 	if protocol.lower() == "restful":
-		kube = FalcoServingKube(model_name,port=port,targetport=8501,template_type="tf")
+		target_port = 8501
 	elif protocol.lower() == "grpc":	
-		kube = FalcoServingKube(model_name,port=port,targetport=8500,template_type="tf")
-		
+		target_port = 8500
+	
+	kube = FalcoServingKube(model_name,
+			port=port,
+			targetport=target_port,
+			template_type="tf",
+			ready_message ="Entering the event loop",
+			error_message =None)
+
 	started = kube.start() and kube.is_running()
 	logging.info(f"kube started for {model_name}?: {started}")
 	if started:
 		logging.info(f"New container for {model_name} started")
 		logging.info(f"Waiting for container for {model_name} to load model")
-		count = 60
-		while not kube.is_ready() and count > 0:
-			time.sleep(3)
-			count -= 1
+		# TODO: fix, this is not safe
+		while not kube.is_ready() or kube.did_fail():
+			time.sleep(1)
 
-		if not kube.is_ready():
+		if kube.did_fail():
 			kube.delete_deployment()
 			kube.delete_service()
 			logging.info(f"Failed to launch the kube for {model_name} for 3 minutes")

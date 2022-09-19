@@ -39,6 +39,9 @@ class CSVWriter(Output):
                 f.write(json.dumps(meta))
 
     def run(self,context=None):
+        """
+        Safe node: input is assumed to be valid or can be handled properly
+        """
         # expect dataframe object
         if context is None:
             context = self.context

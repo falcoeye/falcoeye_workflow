@@ -37,10 +37,10 @@ _TORCHSERVEHEALTHRESPONSE = DESCRIPTOR.message_types_by_name['TorchServeHealthRe
 PredictionsRequest = _reflection.GeneratedProtocolMessageType('PredictionsRequest', (_message.Message,), {
 
   'InputEntry' : _reflection.GeneratedProtocolMessageType('InputEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PREDICTIONSREQUEST_INPUTENTRY,
-    '__module__' : 'inference_pb2'
-    # @@protoc_insertion_point(class_scope:org.pytorch.serve.grpc.inference.PredictionsRequest.InputEntry)
-    })
+	'DESCRIPTOR' : _PREDICTIONSREQUEST_INPUTENTRY,
+	'__module__' : 'inference_pb2'
+	# @@protoc_insertion_point(class_scope:org.pytorch.serve.grpc.inference.PredictionsRequest.InputEntry)
+	})
   ,
   'DESCRIPTOR' : _PREDICTIONSREQUEST,
   '__module__' : 'inference_pb2'
@@ -87,135 +87,141 @@ import grpc
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 class InferenceAPIsServiceStub(object):
-    """Missing associated documentation comment in .proto file."""
+	"""Missing associated documentation comment in .proto file."""
 
-    def __init__(self, channel):
-        """Constructor.
+	def __init__(self, channel):
+		"""Constructor.
 
-        Args:
-            channel: A grpc.Channel.
-        """
-        self.Ping = channel.unary_unary(
-                '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Ping',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=TorchServeHealthResponse.FromString,
-                )
-        self.Predictions = channel.unary_unary(
-                '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Predictions',
-                request_serializer=PredictionsRequest.SerializeToString,
-                response_deserializer=PredictionResponse.FromString,
-                )
+		Args:
+			channel: A grpc.Channel.
+		"""
+		self.Ping = channel.unary_unary(
+			'/org.pytorch.serve.grpc.inference.InferenceAPIsService/Ping',
+			request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+			response_deserializer=TorchServeHealthResponse.FromString,
+			)
+		self.Predictions = channel.unary_unary(
+			'/org.pytorch.serve.grpc.inference.InferenceAPIsService/Predictions',
+			request_serializer=PredictionsRequest.SerializeToString,
+			response_deserializer=PredictionResponse.FromString,
+			)
 
 class InferenceAPIsServiceServicer(object):
-    """Missing associated documentation comment in .proto file."""
+	"""Missing associated documentation comment in .proto file."""
 
-    def Ping(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+	def Ping(self, request, context):
+		"""Missing associated documentation comment in .proto file."""
+		context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+		context.set_details('Method not implemented!')
+		raise NotImplementedError('Method not implemented!')
 
-    def Predictions(self, request, context):
-        """Predictions entry point to get inference using default model version.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+	def Predictions(self, request, context):
+		"""Predictions entry point to get inference using default model version.
+		"""
+		context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+		context.set_details('Method not implemented!')
+		raise NotImplementedError('Method not implemented!')
 
 def add_InferenceAPIsServiceServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'Ping': grpc.unary_unary_rpc_method_handler(
-                    servicer.Ping,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=TorchServeHealthResponse.SerializeToString,
-            ),
-            'Predictions': grpc.unary_unary_rpc_method_handler(
-                    servicer.Predictions,
-                    request_deserializer=PredictionsRequest.FromString,
-                    response_serializer=PredictionResponse.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'org.pytorch.serve.grpc.inference.InferenceAPIsService', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
+	rpc_method_handlers = {
+		'Ping': grpc.unary_unary_rpc_method_handler(
+			servicer.Ping,
+			request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+			response_serializer=TorchServeHealthResponse.SerializeToString,
+		),
+		'Predictions': grpc.unary_unary_rpc_method_handler(
+			servicer.Predictions,
+			request_deserializer=PredictionsRequest.FromString,
+			response_serializer=PredictionResponse.SerializeToString,
+		),
+	}
+	generic_handler = grpc.method_handlers_generic_handler(
+		'org.pytorch.serve.grpc.inference.InferenceAPIsService', rpc_method_handlers)
+	server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
 
 class InferenceAPIsService(object):
-    """Missing associated documentation comment in .proto file."""
+	"""Missing associated documentation comment in .proto file."""
 
-    @staticmethod
-    def Ping(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Ping',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            TorchServeHealthResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+	@staticmethod
+	def Ping(request,
+		target,
+		options=(),
+		channel_credentials=None,
+		call_credentials=None,
+		insecure=False,
+		compression=None,
+		wait_for_ready=None,
+		timeout=None,
+		metadata=None):
+		return grpc.experimental.unary_unary(request, target, '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Ping',
+			google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+			TorchServeHealthResponse.FromString,
+			options, channel_credentials,
+			insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
-    @staticmethod
-    def Predictions(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Predictions',
-            PredictionsRequest.SerializeToString,
-            PredictionResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+	@staticmethod
+	def Predictions(request,
+		target,
+		options=(),
+		channel_credentials=None,
+		call_credentials=None,
+		insecure=False,
+		compression=None,
+		wait_for_ready=None,
+		timeout=None,
+		metadata=None):
+		return grpc.experimental.unary_unary(request, target, '/org.pytorch.serve.grpc.inference.InferenceAPIsService/Predictions',
+			PredictionsRequest.SerializeToString,
+			PredictionResponse.FromString,
+			options, channel_credentials,
+			insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
 
 def start_torchserving(model_name, model_version,port,protocol):
-        
+	
 	logging.info(f"Starting torch serving on port {port} using {protocol} protocol")
 	if protocol.lower() == "restful":
-		kube = FalcoServingKube(model_name,port=port,targetport=8505,template_type="torch",ready_message="WORKER_MODEL_LOADED")
+		target_port = 8505
 	elif protocol.lower() == "grpc":	
-		kube = FalcoServingKube(model_name,port=port,targetport=8508,template_type="torch",ready_message="WORKER_MODEL_LOADED")
-		
+		target_port = 8508
+
+	kube = FalcoServingKube(model_name,
+		port=port,
+		targetport=target_port,
+		template_type="torch",
+		ready_message="WORKER_MODEL_LOADED",
+		error_message=None)
+			
 	started = kube.start() and kube.is_running()
 	logging.info(f"kube started for {model_name}?: {started}")
 	if started:
 		logging.info(f"New container for {model_name} started")
 		logging.info(f"Waiting for container for {model_name} to load model")
-		count = 60
-		while not kube.is_ready() and count > 0:
-			time.sleep(3)
-			count -= 1
 
-		if not kube.is_ready():
-			kube.delete_deployment()
-			kube.delete_service()
-			logging.info(f"Failed to launch the kube for {model_name} for 3 minutes")
-			return None
+	# TODO: fix, this is not safe
+	while not kube.is_ready() or kube.did_fail():
+		time.sleep(1)
 
-
-		logging.info(f"Container for {model_name} is ready to serve")
-		if current_app.config.get("TESTING"):
-			service_address =  kube.get_service_address(external=True,hostname=True)
-		else:
-			service_address = kube.get_service_address()
+	if kube.did_fail():
+		kube.delete_deployment()
+		kube.delete_service()
+		logging.info(f"Failed to launch the kube for {model_name} for 3 minutes")
+		return None
 
 
-		if protocol.lower() == "restful":
-			raise NotImplementedError
-		elif protocol.lower() == "grpc":	
-			tfserver = TorchServinggRPC(model_name,model_version,service_address,kube)
+	logging.info(f"Container for {model_name} is ready to serve")
+	if current_app.config.get("TESTING"):
+		service_address =  kube.get_service_address(external=True,hostname=True)
+	else:
+		service_address = kube.get_service_address()
+	
+	if protocol.lower() == "restful":
+		raise NotImplementedError
+	elif protocol.lower() == "grpc":	
+		tfserver = TorchServinggRPC(model_name,model_version,service_address,kube)
 		return tfserver
 	else:
 		logging.error(f"Couldn't start container for {model_name}")
@@ -223,10 +229,10 @@ def start_torchserving(model_name, model_version,port,protocol):
 
 class TorchServing:
 	def __init__(self,
-		model_name,
-		model_version,
-		service_address,
-		kube):
+	model_name,
+	model_version,
+	service_address,
+	kube):
 		self._name = model_name
 		self._version = model_version
 		self._kube = kube
@@ -248,13 +254,13 @@ class TorchServing:
 
 class TorchServinggRPC(TorchServing):
 	def __init__(self,
-		model_name,
-		model_version,
-		service_address,
-		kube):
+	model_name,
+	model_version,
+	service_address,
+	kube):
 		TorchServing.__init__(self,model_name,
-			model_version,service_address,kube)
-		
+		model_version,service_address,kube)
+	
 		logging.info(f"New gRPC torch serving initialized for {model_name} on {service_address}")
 
 	def post(self,frame):
@@ -267,8 +273,7 @@ class TorchServinggRPC(TorchServing):
 			frame.save(output, format='JPEG')
 			input_data = {'data': output.getvalue()}
 			response = await stub.Predictions(
-			PredictionsRequest(model_name=self._name,
-											input=input_data))
+			PredictionsRequest(model_name=self._name,input=input_data))
 			prediction = response.prediction
 			return prediction
 		except Exception as e:

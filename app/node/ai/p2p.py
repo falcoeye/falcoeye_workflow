@@ -59,10 +59,14 @@ class FalcoeyeP2PNode(Node):
         self._max_points = max_points
         
     def translate(self,detections):
+
         if type(detections) == bytes:
             detections = np.frombuffer(detections,dtype=np.float32).reshape(-1,3)
         elif type(detections) == list:
             detections = np.array(detections)
+        else:
+            # Acting safe
+            return np.array([])
 
         points = detections[:,:2]
         scores = detections[:,2]
@@ -70,6 +74,9 @@ class FalcoeyeP2PNode(Node):
         return points
 
     def run(self,context=None):
+        """
+        Safe node: the input is assumed to be valid or can be handled properly, no need to catch
+        """
         logging.info(f"Running falcoeye p2p")
         while self.more():
             item = self.get()

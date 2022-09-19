@@ -38,7 +38,6 @@ class Model(Node):
         return self._input_size
 
     def run(self,context=None):
-        # TODO: find better name, since this function might initialize the container internally
         if not self._is_ready:
             return
              
@@ -54,23 +53,32 @@ class Model(Node):
         logging.info(f"{self._name} completed")
 
     async def run_on_async(self,session,item):
+        """
+        safe-node: will not cause the workflow to fail
+        """
         if not self._is_ready():
-            return
-        #init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  await self._model_server.post_async(session,item.frame)
-        logging.info(f"Prediction received {item.framestamp}")
-        return [item,raw_detections]
-    
-    def run_on(self,item):
-        if not self._is_ready():
-            return
-        #init_time, frame_count, frame = item 
-        logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
-        raw_detections =  self._model_server.post(item.frame)
-        logging.info(f"Prediction received {item.framestamp}")
-        return [item,raw_detections]
+            return None
+        try:
+            logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
+            raw_detections =  await self._model_server.post_async(session,item.frame)
+            logging.info(f"Prediction received {item.framestamp}")
+            return [item,raw_detections]
+        except Exception as e:
+            return None
 
+    def run_on(self,item):
+        """
+        safe-node: will not cause the workflow to fail
+        """
+        if not self._is_ready():
+            return None
+        try:
+            logging.info(f"New frame to post to container {item.framestamp} {item.timestamp}")
+            raw_detections =  self._model_server.post(item.frame)
+            logging.info(f"Prediction received {item.framestamp}")
+            return [item,raw_detections]
+        except Exception as e:
+            return None
 
 class TFModel(Model):
     def __init__(self, name,
@@ -81,6 +89,7 @@ class TFModel(Model):
         Model.__init__(self,name,model_name,version,protocol)
 
     def _init_serving_service(self):
+        
         self._model_server = get_model_server(self._model_name,"tf",self._version,self._protocol)
         if self._model_server is None:
             logging.warning(f"Model server is off or doesn't exists {self._model_name}")

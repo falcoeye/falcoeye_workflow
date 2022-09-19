@@ -14,22 +14,30 @@ class ThreadWrapper(Node):
         self._node = node
 
     def run_forever_(self):
-        logging.info(f"Starting looping for {self.name}")
-        while self._continue or self.more():
-            if not self.more():
-                continue
-            logging.info(f"New item for {self.name} sequence")
-            item = self.get()
-            node_res = self._node.run_on(item)
-            self.sink(node_res)
-        
-        logging.info(f"Loop {self.name} inturrepted. Flushing queue")
-        if self._done_callback:
-            self._done_callback(self._name)  
-        self.close_sinks() 
+        """
+        Critical node: failure here should cause the workflow to fail
+        """
+        try:
+            logging.info(f"Starting looping for {self.name}")
+            while self._continue or self.more():
+                if not self.more():
+                    continue
+                logging.info(f"New item for {self.name} sequence")
+                item = self.get()
+                node_res = self._node.run_on(item)
+                self.sink(node_res)
+            
+            logging.info(f"Loop {self.name} inturrepted. Flushing queue")
+            if self._done_callback:
+                self._done_callback(self._name)  
+            self.close_sinks() 
+        except Exception as e:
+            logging.error(e)
+            self._error_callback(self._name,str(e))
 
     def run_async(self,done_callback,error_callback):
         self._done_callback = done_callback
+        self._error_callback = error_callback
         self._continue = True
         self._thread = Thread(target=self.run_forever_, args=(),daemon=True)
         self._thread.start()
@@ -66,6 +74,9 @@ class ConcurrentRequestTaskThreadWrapper(Node):
         logging.error("Not implemented")
 
     async def run_session_loop_(self,session):
+        """
+        Critical node: failure here should cause the workflow to fail
+        """
         try:
             tasks = []
             while self._continue or self.more():
@@ -87,6 +98,7 @@ class ConcurrentRequestTaskThreadWrapper(Node):
             logging.info("Exiting sinking loop")
         except Exception as e:
             logging.error(e)
+            self._error_callback(self._name,str(e))
 
 class ConcurrentPostTasksThreadWrapper(ConcurrentRequestTaskThreadWrapper):
     
