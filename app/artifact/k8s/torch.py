@@ -273,7 +273,8 @@ class TorchServinggRPC(TorchServing):
 			frame.save(output, format='JPEG')
 			input_data = {'data': output.getvalue()}
 			response = await stub.Predictions(
-			PredictionsRequest(model_name=self._name,input=input_data))
+					PredictionsRequest(model_name=self._name,
+					input=input_data))
 			prediction = response.prediction
 			return prediction
 		except Exception as e:

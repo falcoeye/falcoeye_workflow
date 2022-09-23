@@ -191,21 +191,24 @@ class FalcoServingKube:
     
     def get_logs(self,pod_name=None):
         v1 = client.CoreV1Api()
-        podname = None
+        _pod_name = None
         if not pod_name:
             api_response = v1.list_namespaced_pod(namespace=self.namespace)
             for item in api_response.items:
-                _podname = item.metadata.name
-                if self.name in _podname:
-                    podname = _podname
+                item_podname = item.metadata.name
+                if self.name in item_podname:
+                    _pod_name = item_podname
                     break
         else:
             raise NotImplementedError
-        try:
-            api_response = v1.read_namespaced_pod_log(name=podname, namespace=self.namespace)
-            return api_response
-        except kubernetes.client.exceptions.ApiException as e:
-            return None
+
+        if _pod_name:
+            try:
+                api_response = v1.read_namespaced_pod_log(name=_pod_name, namespace=self.namespace)
+                return api_response
+            except kubernetes.client.exceptions.ApiException as e:
+                return None
+        return None
         
     @staticmethod
     def set_artifact_registry(registry):

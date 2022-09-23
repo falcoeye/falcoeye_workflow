@@ -3,7 +3,7 @@ from app.node.node import Node
 import json
 import logging
 import numpy as np
-from .utils import get_color_from_number
+from .utils import get_color_from_number,non_max_suppression
 from PIL import Image
 
 
@@ -84,57 +84,86 @@ class FalcoeyeDetection:
 
 class FalcoeyeDetectionNode(Node):
     
-    def __init__(self, name, labelmap,min_score_thresh,max_boxes):
+    def __init__(self, name, 
+    labelmap,
+    min_score_thresh,
+    max_boxes,
+    overlap_thresh=0.3):
         Node.__init__(self,name)
         self._min_score_thresh = min_score_thresh
         self._max_boxes = max_boxes
+        self._overlap_thresh = overlap_thresh
         if type(labelmap) == str:
             with open(labelmap) as f:
                 self._category_index = {int(k):v for k,v in json.load(f).items()}
         elif type(labelmap) == dict:
             self._category_index = {int(k):v for k,v in labelmap.items()}
-
-    def translate(self,detections):
+    
+    def translate(self):
+        raise NotImplementedError
+    
+    def run(self):
+        raise NotImplementedError
+    
+    def finalize(self,boxes,classes,scores):
         _detections = []
-        logging.info("Translating detection")
         _category_map = {k:[] for k in self._category_index.values()}
         _category_map["unknown"] = []
+        # TODO: can be optimized with nms suppresion
+        conf_mask = np.where(scores>self._min_score_thresh)
+        logging.info(f"Conf mask {conf_mask[0].shape} min score thresh {self._min_score_thresh} score min {scores.min()}")
+        boxes = boxes[conf_mask]
+        classes = classes[conf_mask]
+        scores = scores[conf_mask]
 
+        logging.info(f"Applying non-max suppression with threshold {self._overlap_thresh} on {boxes.shape[0]} items")
+        nms_picks = non_max_suppression(
+            boxes,scores,self._overlap_thresh
+        )
+        logging.info(f"Number of items after non-max suppression is {len(nms_picks)}")
+        for counter,p in enumerate(nms_picks):
+            if classes[p] in self._category_index:
+                class_name = str(self._category_index[classes[p]])
+            else:
+                class_name = "unknown"
+            color = get_color_from_number(int(classes[p]))
+            logging.info(f"color {color}")
+            _detections.append(
+                {
+                    "box": tuple(boxes[p].tolist()),
+                    "color": color,
+                    "class": class_name,
+                    "score": round(scores[p], 2) * 100,
+                }
+            )
+            _category_map[class_name].append(counter)
+        return _detections, _category_map
+
+class FalcoeyeTFDetectionNode(FalcoeyeDetectionNode):
+    def __init__(self, name, 
+    labelmap,
+    min_score_thresh,
+    max_boxes,
+    overlap_thresh=0.3):
+        FalcoeyeDetectionNode.__init__(self,name, 
+        labelmap,
+        min_score_thresh,
+        max_boxes,
+        overlap_thresh)
+
+    def translate(self,detections):
+        logging.info("Translating detection")
         if detections is None or type(detections) != dict or "detection_boxes" not in detections:
             return _detections, _category_map
-        
-        
 
         boxes = np.array(detections["detection_boxes"])
         classes = np.array(detections["detection_classes"]).astype(int)
         scores = np.array(detections["detection_scores"])
         
         logging.info(f"#boxes {boxes.shape}, #classes {classes.shape} #scores {scores.shape}")
-
-
-        counter = 0
-        for i in range(boxes.shape[0]):
-            if self._max_boxes == len(_detections):
-                break
-            if scores is None or scores[i] > self._min_score_thresh:
-                box = tuple(boxes[i].tolist())
-                if classes[i] in self._category_index:
-                    class_name = str(self._category_index[classes[i]])
-                else:
-                    class_name = "unknown"
-                color = get_color_from_number(classes[i])
-                _detections.append(
-                    {
-                        "box": box,
-                        "color": color,
-                        "class": class_name,
-                        "score": round(scores[i], 2) * 100,
-                    }
-                )
-                _category_map[class_name].append(counter)
-                counter += 1
-        return _detections, _category_map
-
+        return self.finalize(boxes,classes,scores)
+        
+       
     def run(self,context=None):
         """
         Safe node: the input is assumed to be valid or can be handled properly, no need to catch
@@ -147,7 +176,7 @@ class FalcoeyeDetectionNode(Node):
             try:
                 if type(raw_detections) == dict and "prediction" in raw_detections:
                     # restful
-                    raw_detections = ['predictions'][0]
+                    raw_detections = raw_detections['predictions'][0]
                 elif raw_detections is None:
                     # TODO: should do failover
                     raw_detections = {'detection_boxes': np.array([]),
@@ -171,3 +200,46 @@ class FalcoeyeDetectionNode(Node):
             except Exception as e:
                 logging.error(e)
     
+class FalcoeyeTorchDetectionNode(FalcoeyeDetectionNode):
+    def __init__(self, name, 
+        labelmap,
+        min_score_thresh,
+        max_boxes,
+        overlap_thresh=0.3):
+        FalcoeyeDetectionNode.__init__(self,name, labelmap,
+        min_score_thresh,
+        max_boxes,
+        overlap_thresh)
+        
+
+    def translate(self,detections):
+        bboxes = detections[..., :4].reshape(-1,4)
+        scores = detections[..., 4]
+        classes = detections[..., 5]
+        return self.finalize(bboxes,classes,scores)
+        
+    def run(self,context=None):
+        """
+        Safe node: the input is assumed to be valid or can be handled properly, no need to catch
+        """
+        logging.info(f"Running falcoeye detection")
+        while self.more():
+            item = self.get()
+            frame,raw_detections = item
+            try:
+                if type(raw_detections) == bytes:
+                    raw_detections = np.frombuffer(raw_detections,dtype=np.float32).reshape(-1,6)
+                elif type(detections) == list:
+                    raw_detections = np.array(raw_detections)
+                else:
+                    # Acting safe
+                    raw_detections = {'detection_boxes': np.array([]),
+                            'detection_classes':np.array([]),
+                            'detection_scores': np.array([])}
+                
+                detections, category_map = self.translate(raw_detections)
+                fe_detection = FalcoeyeDetection(frame,detections, 
+                            category_map)
+                self.sink(fe_detection)
+            except Exception as e:
+                logging.error(e)
