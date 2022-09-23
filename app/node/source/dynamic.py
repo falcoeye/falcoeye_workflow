@@ -1,6 +1,6 @@
 
 from app.node.node import Node
-from .stream import AngelCamSource,YoutubeSource,RTSPSource
+from .stream import AngelCamSource,YoutubeSource,RTSPSource,M3U8Source
 from .video import VideoFileSource
 import logging
 def determine_source(**kwargs):
@@ -11,6 +11,8 @@ def determine_source(**kwargs):
             return YoutubeSource
         elif "angelcam" in url:
             return AngelCamSource
+        elif url.endswith(".m3u8"):
+            return M3U8Source
     filename = kwargs.get("filename", None) 
     if filename:
         return VideoFileSource

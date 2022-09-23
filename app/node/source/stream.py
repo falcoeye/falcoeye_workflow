@@ -16,8 +16,8 @@ class StreamingSource(Source):
     def __init__(self, name, sample_every=5, length=30,**kwargs):
         Source.__init__(self,name)
         self._running = False
-        self._sample_every = sample_every
-        self._length = length
+        self._sample_every = int(sample_every)
+        self._length = float(length)
         self._streamer = None
         self._trial = 10
     
@@ -66,8 +66,9 @@ class StreamingSource(Source):
             logging.info(f"Exiting stream loop {c_time}")
             if self._done_callback:
                 self._done_callback(self._name)
-        except Exception:
-            self.error_callback(self._name,"Error in streaming")
+        except Exception as e:
+            logging.error(str(e))
+            self._error_callback(self._name,"Error in streaming")
         
         self.close()
         self.close_sinks()
@@ -215,4 +216,25 @@ class RTSPSource(StreamingSource):
             self._streamer.release()
         self._streamer = None
  
+class M3U8Source(StreamingSource):
+    resolutions = {"best": {"width": 320, "height": 180}}
+    def __init__(self,name,url,sample_every=5, length=60,**kwargs):
+        StreamingSource.__init__(self,name,sample_every,length)
+        self._url = url
 
+    def open(self):
+        StreamingSource.open(self)
+        self._streamer = cv2.VideoCapture(self._url)
+
+    def read(self):
+        ret, frame = self._streamer.read()
+        return ret,frame
+
+    def close(self):
+        StreamingSource.close(self)
+        if self._streamer:
+            self._streamer.release()
+        self._streamer = None
+
+
+  
