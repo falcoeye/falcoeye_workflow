@@ -7,6 +7,7 @@ from .utils import get_color_from_number,non_max_suppression
 from PIL import Image
 
 
+
 class FalcoeyeDetection:
     def __init__(self,frame,detections, category_map):
         self._frame = frame
@@ -46,6 +47,12 @@ class FalcoeyeDetection:
     @property
     def timestamp(self):
         return self._frame.timestamp
+
+    def iwidth(self,i):
+        return np.abs(self._boxes[i][0]-self._boxes[i][2])
+    
+    def iheight(self,i):
+        return np.abs(self._boxes[i][1]-self._boxes[i][3])
 
     def count_of(self, category):
         if category in self._category_map:
@@ -117,9 +124,12 @@ class FalcoeyeDetectionNode(Node):
         scores = scores[conf_mask]
 
         logging.info(f"Applying non-max suppression with threshold {self._overlap_thresh} on {boxes.shape[0]} items")
-        nms_picks = non_max_suppression(
-            boxes,scores,self._overlap_thresh
-        )
+        if self._overlap_thresh:
+            nms_picks = non_max_suppression(
+                boxes,scores,self._overlap_thresh
+            )
+        else:
+            nms_picks = range(boxes.shape[0])
         logging.info(f"Number of items after non-max suppression is {len(nms_picks)}")
         for counter,p in enumerate(nms_picks):
             if classes[p] in self._category_index:
@@ -127,7 +137,6 @@ class FalcoeyeDetectionNode(Node):
             else:
                 class_name = "unknown"
             color = get_color_from_number(int(classes[p]))
-            logging.info(f"color {color}")
             _detections.append(
                 {
                     "box": tuple(boxes[p].tolist()),
@@ -155,8 +164,10 @@ class FalcoeyeTFDetectionNode(FalcoeyeDetectionNode):
         logging.info("Translating detection")
         if detections is None or type(detections) != dict or "detection_boxes" not in detections:
             return _detections, _category_map
-
+        
         boxes = np.array(detections["detection_boxes"])
+        # y1,x1,y2,x2 --> x1, y1, x2, y2
+        boxes = boxes[:,[1,0,3,2]]
         classes = np.array(detections["detection_classes"]).astype(int)
         scores = np.array(detections["detection_scores"])
         

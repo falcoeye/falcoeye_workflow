@@ -10,7 +10,7 @@ class VideoFileSource(Source):
     def __init__(self, name, filename,sample_every,length=-1,**kwargs):
         Source.__init__(self,name)
         self._filename = filename
-        self._sample_every = sample_every
+        self._sample_every = int(sample_every)
         self._num_frames = int(length)
         self._frames_per_second = -1
         self._reader = None
@@ -46,7 +46,7 @@ class VideoFileSource(Source):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                   
             logging.info(f"Frame {counter}/{self._num_frames}")
-            self.sink(FalcoeyeFrame(frame,count,counter))
+            self.sink(FalcoeyeFrame(frame,count,counter,"frame"))
             #logging.info(f"Frame {counter}/{self._num_frames} sinked")
             count += 1
             counter += self._sample_every

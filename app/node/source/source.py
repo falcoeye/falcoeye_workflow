@@ -3,6 +3,7 @@ from app.node.node import Node
 import logging
 import cv2
 import numpy as np
+import datetime
 
 class Source(Node):
     def __init__(self,name,**kwargs):
@@ -19,12 +20,13 @@ class Source(Node):
 
 
 class FalcoeyeFrame:
-    def __init__(self,frame,frame_number,relative_time):
+    def __init__(self,frame,frame_number,relative_time,time_unit):
         #logging.info(f"New FalcoeyeFrame {frame_number} {relative_time}")
         self._frame = frame.astype(np.uint8)
         self._frame_number = frame_number
         self._relative_time = relative_time
         self._frame_bgr = cv2.cvtColor(self._frame, cv2.COLOR_RGB2BGR)
+        self._time_unit = time_unit
     
     @property
     def size(self):
@@ -45,7 +47,10 @@ class FalcoeyeFrame:
     
     @property
     def timestamp(self):
-        return self._relative_time
+        if self._time_unit == "frame":
+            return self._relative_time
+        elif self._time_unit == "epoch":
+           return datetime.datetime.fromtimestamp(self._relative_time)
     
     def __lt__(self,other):
         return self._frame_number < other.framestamp
