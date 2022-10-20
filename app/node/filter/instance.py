@@ -27,6 +27,13 @@ class SizeFilter(Node):
         logging.info(f"Running {self.name} with {self._width_threshold} and {self._height_threshold}")
         while self.more():
             item = self.get()   
-            for i in range(item.count):
-                if item.iwidth(i) > self._width_threshold or item.iheight(i) > self._height_threshold:
-                    item.delete(i)
+            index = 0
+            logging.info(f"Before size filter {item.count}")
+            for _ in range(item.count):
+                if item.iwidth(index) > self._width_threshold or item.iheight(index) > self._height_threshold:
+                    item.delete(index)
+                else:
+                    # when deleting, no index increament due to shift in array
+                    index += 1
+            self.sink(item)
+            logging.info(f"After size filter {item.count}")

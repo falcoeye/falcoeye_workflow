@@ -39,7 +39,7 @@ class SequenceRunner(Node):
         logging.info("Flushing nodes after closing.")
         for n in self._nodes:
             logging.info(f"Runing node {n.name}")
-            n.run()  
+            n.run(context)  
           
     def run_forever_(self,context=None):
         """

@@ -12,10 +12,10 @@ class FalcoeyeDetection:
     def __init__(self,frame,detections, category_map):
         self._frame = frame
         self._detections = detections
-        self._category_map = category_map
+        self._category_map = {c:len(v) for c,v in category_map.items()}
         self._boxes = [d["box"] for d in self._detections]
         self._classes = [d["class"] for d in self._detections]
-    
+
     @property
     def size(self):
         return self._frame.size
@@ -56,7 +56,7 @@ class FalcoeyeDetection:
 
     def count_of(self, category):
         if category in self._category_map:
-            return len(self._category_map[category])
+            return self._category_map[category]
         return -1
 
     def get_class_instances(self, name):
@@ -68,13 +68,16 @@ class FalcoeyeDetection:
     def get_box(self, i):
         return self._detections[i]["box"]
 
-    def detele(self,index):
-        item = self.detections.pop(index)
+    def delete(self,index):
+        item = self._detections.pop(index)
         self._category_map[item["class"]] -= 1
+        self._boxes.pop(index)
+        self._classes.pop(index)
+        
 
     def save_frame(self,path):
         Image.fromarray(self._frame).save(f"{path}/{self._frame_number}.png")
-
+        
     def __lt__(self,other):
         if type(other) == FalcoeyeDetection:
             return self._frame < other._frame

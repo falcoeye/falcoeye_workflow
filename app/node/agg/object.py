@@ -21,6 +21,26 @@ class ClassCounter(Node):
         logging.info(f"\n{df}")
         self.sink(df)
 
+class MissingClassCounter(Node):
+    def __init__(self, name, keys,maxes):
+        Node.__init__(self,name)
+        self._keys = keys
+        self._maxes = maxes
+
+    def run(self,context=None):
+        table = []
+        logging.info(f"Running {self.name} for {self._keys}")
+        while self.more():
+            logging.info(f"New item for {self.name}")
+            item = self.get()
+            row = [item.timestamp,item.framestamp]
+            for k in self._keys:
+                row.append(max(0,self._maxes[k] - item.count_of(k)))
+            table.append(row)
+        df = pd.DataFrame(table,columns=["Timestamp","Frame_Order"]+self._keys)
+        logging.info(f"\n{df}")
+        self.sink(df)
+
 class ClasstMonitor(Node):
     def __init__(self, name, object_name, min_to_trigger_in, min_to_trigger_out):
         Node.__init__(self,name)
