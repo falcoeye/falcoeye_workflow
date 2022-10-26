@@ -21,7 +21,7 @@ class Config:
         }
     }
     if DEPLOYMENT == "k8s":
-        from app.artifact.k8s import FalcoServingKube
+        from app.k8s import FalcoServingKube
         SERVICES["falcoeye-backend"]["k8s"] = FalcoServingKube("falcoeye-backend")
     
 

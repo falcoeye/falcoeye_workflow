@@ -9,12 +9,9 @@ import kubernetes
 logger = logging.getLogger(__name__)
 
 SERVING_TEMPLATE = {
-    "tf":os.path.join(
-        os.path.dirname(__file__), "resources/tf-serving-template.yml"
-    ),
-    "torch":os.path.join(
-        os.path.dirname(__file__), "resources/torch-serving-template.yml"
-    )
+    "job":os.path.join(
+        os.path.dirname(__file__), "resources/analysis-job-template.yml"
+    ), 
 }
 
 
@@ -179,7 +176,11 @@ class FalcoServingKube:
         [port] = [port.port for port in service.spec.ports]
         
         if external:
-            service = v1.read_namespaced_service(namespace=self.namespace, name=self.service_name)
+            try:
+                service = v1.read_namespaced_service(namespace=self.namespace, name=self.service_name)
+            except Exception :
+                # trying without -svc
+                service = v1.read_namespaced_service(namespace=self.namespace, name=self.service_name[:-4])
             if hostname:
                 host = service.status.load_balancer.ingress[0].hostname
             else:
@@ -225,3 +226,54 @@ class FalcoServingKube:
 
     def scale(self, n):
         pass
+
+
+class FalcoJobKube:
+    def __init__(
+        self,
+        name,
+        job_path,
+        namespace="default"
+    ):
+        self._name = name
+        self._job_path = job_path
+        self._namespace = namespace
+        
+        if not self._name:
+            raise RuntimeError("name should not be empty")
+        self._template = self._get_deployment_template()
+   
+        try:
+            config.load_kube_config()
+        except:
+            config.load_incluster_config()
+    
+    def _get_deployment_template(self):
+        
+        with open(SERVING_TEMPLATE["job"]) as f:
+            template = self._fill_deployment_template(f.read())
+            template = list(yaml.safe_load_all(template))[0]
+
+        return template
+
+    def _fill_deployment_template(self, template):
+        template = template.replace("$jobname", self._name)        
+        template = template.replace("$analysis_path", self._job_path)
+        logging.info(template)
+        return template
+
+    def start(self):
+        api_instance = client.BatchV1Api()
+        # Create the specification of deployment
+        spec = client.V1JobSpec(
+            template=self._template)
+        # Instantiate the job object
+        job = client.V1Job(
+            api_version="batch/v1",
+            kind="Job",
+            metadata=client.V1ObjectMeta(name=self._name),
+            spec=spec)
+        api_response = api_instance.create_namespaced_job(body=job,namespace="default")
+        logging.info("Job created. status='%s'" % str(api_response.status))    
+        return job
+    
