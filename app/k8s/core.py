@@ -262,11 +262,12 @@ class FalcoJobKube:
         logging.info(template)
         return template
 
-    def start(self):
+    def start(self,watch=False):
+        
         api_instance = client.BatchV1Api()
         # Create the specification of deployment
         spec = client.V1JobSpec(
-            template=self._template)
+            template=self._template, backoff_limit=0)
         # Instantiate the job object
         job = client.V1Job(
             api_version="batch/v1",
@@ -275,5 +276,15 @@ class FalcoJobKube:
             spec=spec)
         api_response = api_instance.create_namespaced_job(body=job,namespace="default")
         logging.info("Job created. status='%s'" % str(api_response.status))    
+            
+        if watch:
+            js = api_instance.read_namespaced_job_status(self._name,"default").status
+            status = js.succeeded or js.failed or not js.active
+            while not status:
+                time.sleep(0.2)
+                js = api_instance.read_namespaced_job_status(self._name,"default").status
+                status = js.succeeded or js.failed or not js.active
+                return status.succeeded
+
         return job
     
