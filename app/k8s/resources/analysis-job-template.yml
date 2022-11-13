@@ -24,8 +24,13 @@ spec:
     volumeMounts:
         - mountPath: /user-assets/
           name: user-assets-volume-mount
+        - mountPath: /falcoeye-temp/
+          name: falcoeye-temp-volume-mount
   restartPolicy: Never
   volumes:
         - name: user-assets-volume-mount
           persistentVolumeClaim:
             claimName: user-assets-pvc
+        - name: falcoeye-temp-volume-mount
+          persistentVolumeClaim:
+            claimName: falcoeye-temp-pvc
