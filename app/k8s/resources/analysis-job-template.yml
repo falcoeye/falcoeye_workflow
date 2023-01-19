@@ -2,6 +2,13 @@ spec:
   containers:
   - name: $jobname
     image: falcoeye-analysis:latest
+    resources:
+      limits:
+        cpu: "3000m"
+        memory: 4Gi
+      requests:
+        cpu: "3000m"
+        memory: 4Gi
     imagePullPolicy: IfNotPresent
     command: ["python3.8", "main.py"]   
     env:
