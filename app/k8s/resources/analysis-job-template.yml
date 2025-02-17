@@ -4,11 +4,11 @@ spec:
     image: falcoeye-analysis:latest
     resources:
       limits:
-        cpu: "3000m"
-        memory: 4Gi
+        cpu: "4000m"        # Changed from 3000m to 2
+        memory: 8Gi
       requests:
-        cpu: "3000m"
-        memory: 4Gi
+        cpu: "4000m"        # Changed from 3000m to 1
+        memory: 8Gi
     imagePullPolicy: IfNotPresent
     command: ["python3.8", "main.py"]   
     env:
